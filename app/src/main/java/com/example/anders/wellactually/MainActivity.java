@@ -2,29 +2,23 @@ package com.example.anders.wellactually;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.media.AudioRecord;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.media.PlaybackParams;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View.OnTouchListener;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.SeekBar;
+import android.widget.Space;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
@@ -68,6 +62,36 @@ public class MainActivity extends AppCompatActivity {
         pitchBar.setOnSeekBarChangeListener(customSeekbarListener);
         speedBar.setOnSeekBarChangeListener(customSeekbarListenerSpeed);
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
+    }
+
+    public void xyPadOnClick(View view) {
+        FrameLayout pad = findViewById(R.id.xyPad);
+        pad.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                float xScale = event.getX() / v.getWidth();
+                float yScale = event.getY() / v.getHeight();
+                System.out.println(xScale + " : " + yScale);
+                handleXyPadCoordinates(xScale,yScale);
+                v.dispatchGenericMotionEvent(event); // ????
+                return true;
+            }
+
+        });
+    }
+
+    private void handleXyPadCoordinates(float x, float y) {
+        if (x > 1)
+            x = 1;
+        else if (x<=0)
+            x = 0;
+        if (y > 1)
+            y = 1;
+        else if (y<=0)
+            y = 0;
+        mp.setPlaybackParams(params.setSpeed(x*3));  //!!
+        mp.setPlaybackParams(params.setPitch((1-y)*3));
+
     }
 
     public void onPlay(View view) {  // play button
