@@ -88,24 +88,26 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 float x = event.getX();
                 float y = event.getY();
-                if (x <= 0)
-                    x = 0;
-                else if (x > v.getWidth())
-                    x = v.getWidth();
+                float seekerHalfWidth = xySeeker.getWidth()/2;
+                float seekerHalfHeight = xySeeker.getHeight()/2;
+                if (x <= 0)  // handles out of bounds
+                    x = seekerHalfWidth;
+                else if (x > v.getWidth() - seekerHalfWidth)
+                    x = v.getWidth() - seekerHalfWidth;
                 if (y <= 0)
-                    y = 0;
-                else if (y > v.getHeight())
-                    y = v.getHeight();
+                    y = seekerHalfHeight;
+                else if (y > v.getHeight() - seekerHalfHeight)
+                    y = v.getHeight() - seekerHalfHeight;
                 float xScale = x / v.getWidth();
                 float yScale = y / v.getHeight();
                 boolean updated = false;
-                xySeeker.setX(x);
-                if (xScale > 0.05 && xScale <= 0.95) { // safe limits for rounding
+                xySeeker.setX(x - seekerHalfWidth);  // to fix origin to center
+                xySeeker.setY(y - seekerHalfHeight);
+                if (xScale > 0.05 && xScale < 0.95) { // safe limits for rounding
                     params.setSpeed(xScale * 2);
                     updated = true;
                 }
-                xySeeker.setY(y);
-                if (yScale > 0.05 && yScale <= 0.95) {
+                if (yScale > 0.05 && yScale < 0.95) {
                     params.setPitch((1 - yScale) * 2);
                     updated = true;
                 }
@@ -114,6 +116,14 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    public void resetXyPad(View view) {
+        xySeeker.setX(findViewById(R.id.xyPad).getWidth()/2 - xySeeker.getWidth()/2);
+        xySeeker.setY(findViewById(R.id.xyPad).getHeight()/2 - xySeeker.getHeight()/2);
+        params.setSpeed(1f);
+        params.setPitch(1f);
+        updateParams();
     }
 
     private void updateParams() {
