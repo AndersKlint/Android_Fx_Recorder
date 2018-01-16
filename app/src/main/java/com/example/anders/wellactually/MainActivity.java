@@ -14,9 +14,9 @@ import android.view.MotionEvent;
 import android.view.View.OnTouchListener;
 import android.view.View;
 import android.widget.Button;
-import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.SeekBar;
-import android.widget.Space;
+import android.widget.TabHost;
 
 import java.io.IOException;
 
@@ -33,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     private Button recordButton;
     private SeekBar pitchBar;
     private SeekBar speedBar;
+    private TabHost tabHost;
+    private ImageView xySeeker;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -50,6 +52,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        tabHost = findViewById(R.id.tabHost);
+        tabHost.setup();
+        initTabs();
+        xySeeker = findViewById(R.id.xyPadSeeker);
         mp = new MediaPlayer();
         params = new PlaybackParams();
         playButton = (Button) findViewById(R.id.button2);
@@ -57,41 +63,63 @@ public class MainActivity extends AppCompatActivity {
         pitchBar = (SeekBar) findViewById(R.id.seekBar);
         speedBar = (SeekBar) findViewById(R.id.seekBar3);
         playButton.setEnabled(false);
-        pitchBar.setEnabled(false);
-        speedBar.setEnabled(false);
         pitchBar.setOnSeekBarChangeListener(customSeekbarListener);
         speedBar.setOnSeekBarChangeListener(customSeekbarListenerSpeed);
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
     }
 
+    private void initTabs() {
+        //Tab 1
+        TabHost.TabSpec spec = tabHost.newTabSpec("Sliders");
+        spec.setContent(R.id.tab1);
+        spec.setIndicator("Sliders");
+        tabHost.addTab(spec);
+
+        //Tab 2
+        spec = tabHost.newTabSpec("XY-Pad");
+        spec.setContent(R.id.tab2);
+        spec.setIndicator("XY-Pad");
+        tabHost.addTab(spec);
+    }
+
     public void xyPadOnClick(View view) {
-        FrameLayout pad = findViewById(R.id.xyPad);
-        pad.setOnTouchListener(new OnTouchListener() {
+        view.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                float xScale = event.getX() / v.getWidth();
-                float yScale = event.getY() / v.getHeight();
-                System.out.println(xScale + " : " + yScale);
-                handleXyPadCoordinates(xScale,yScale);
-                v.dispatchGenericMotionEvent(event); // ????
+                float x = event.getX();
+                float y = event.getY();
+                if (x <= 0)
+                    x = 0;
+                else if (x > v.getWidth())
+                    x = v.getWidth();
+                if (y <= 0)
+                    y = 0;
+                else if (y > v.getHeight())
+                    y = v.getHeight();
+                float xScale = x / v.getWidth();
+                float yScale = y / v.getHeight();
+                boolean updated = false;
+                xySeeker.setX(x);
+                if (xScale > 0.05 && xScale <= 0.95) { // safe limits for rounding
+                    params.setSpeed(xScale * 2);
+                    updated = true;
+                }
+                xySeeker.setY(y);
+                if (yScale > 0.05 && yScale <= 0.95) {
+                    params.setPitch((1 - yScale) * 2);
+                    updated = true;
+                }
+                if (updated)
+                    updateParams();
                 return true;
             }
-
         });
     }
 
-    private void handleXyPadCoordinates(float x, float y) {
-        if (x > 1)
-            x = 1;
-        else if (x<=0)
-            x = 0;
-        if (y > 1)
-            y = 1;
-        else if (y<=0)
-            y = 0;
-        mp.setPlaybackParams(params.setSpeed(x*3));  //!!
-        mp.setPlaybackParams(params.setPitch((1-y)*3));
-
+    private void updateParams() {
+        if (mp != null)
+            if (mp.isPlaying())
+                mp.setPlaybackParams(params);
     }
 
     public void onPlay(View view) {  // play button
@@ -109,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        updateParams();
     }
 
     private void stopPlaying() {
@@ -151,8 +180,6 @@ public class MainActivity extends AppCompatActivity {
             initMediaPlayer();
         }
         playButton.setEnabled(true);
-        pitchBar.setEnabled(true);
-        speedBar.setEnabled(true);
         recording = false;
     }
 
@@ -175,7 +202,8 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    mp.setPlaybackParams(params.setPitch((float) (progress + 1) / 4));
+                    params.setPitch((float) (progress + 1) / 4);
+                    updateParams();
                 }
 
                 @Override
@@ -193,7 +221,8 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    mp.setPlaybackParams(params.setSpeed((float) (progress + 1) / 4));
+                    params.setSpeed((float) (progress + 1) / 4);
+                    updateParams();
                 }
 
                 @Override
