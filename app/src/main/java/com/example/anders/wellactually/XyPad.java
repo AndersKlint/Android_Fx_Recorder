@@ -37,13 +37,17 @@ public class XyPad {
                 float yScale = y / v.getHeight();
                 xySeeker.setX(x - seekerHalfWidth);  // to fix origin to center
                 xySeeker.setY(y - seekerHalfHeight);
+                boolean updatedParams = false;
                 if (xScale > 0.05 && xScale < 0.95) { // safe param limits for rounding
                     params.setSpeed(xScale * 2);
+                    updatedParams = true;
                 }
                 if (yScale > 0.05 && yScale < 0.95) {
                     params.setPitch((1 - yScale) * 2);
+                    updatedParams = true;
                 }
-                soundHandler.updateParams();
+                if(updatedParams)
+                    soundHandler.updateParams();
                 return true;
             }
         });

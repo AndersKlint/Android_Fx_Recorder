@@ -3,7 +3,9 @@ package com.example.anders.wellactually;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.media.PlaybackParams;
+import android.os.Handler;
 import android.util.Log;
+import android.widget.ProgressBar;
 
 import java.io.IOException;
 
@@ -13,13 +15,31 @@ public class SoundHandler {
     private boolean isRecording;
     private String recordingPath;
     private PlaybackParams params;
+    private static Handler handler = new Handler(); // works like mailbox i think
+    private ProgressBar progressBar;
 
-    public SoundHandler(String recordingPath) {
+    public SoundHandler(String recordingPath, ProgressBar bar) {
         this.recordingPath = recordingPath;
+        progressBar = bar;
         mp = new MediaPlayer();
         mr = new MediaRecorder();
         params = new PlaybackParams();
     }
+
+    private int getProgress(){
+        return (int) (((float) mp.getCurrentPosition() / (float) mp.getDuration()) * 100);
+    }
+
+    private Runnable updateProgressBar = new Runnable() {
+        @Override
+        public void run() {
+            progressBar.setProgress(getProgress());
+            if(mp.getDuration() < 5000)
+                handler.postDelayed(this, 24);
+            else
+                handler.postDelayed(this, 1000);
+        }
+    };
 
     public void updateParams() {
         if (mp != null)
@@ -32,11 +52,17 @@ public class SoundHandler {
             startPlaying();
             return true;
         }
-        mp.stop();
+        stopPlaying();
         return false;
     }
 
-    void startPlaying() {
+    private void stopPlaying(){
+        mp.stop();
+        handler.removeCallbacks(updateProgressBar);
+        progressBar.setProgress(0);
+    }
+
+    private void startPlaying() {
         try {
             mp.prepare();
             mp.start();
@@ -44,6 +70,7 @@ public class SoundHandler {
             e.printStackTrace();
         }
         updateParams();
+        handler.post(updateProgressBar); // has to be called after mp.start
     }
 
 
@@ -57,7 +84,7 @@ public class SoundHandler {
 
     void startRecording() {
         if (mp.isPlaying())
-            mp.stop();
+            stopPlaying();
         mr = new MediaRecorder();
         mr.setAudioSource(MediaRecorder.AudioSource.MIC);
         mr.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
