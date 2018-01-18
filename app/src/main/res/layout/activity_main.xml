@@ -22,34 +22,47 @@
             app:layout_scrollFlags="scroll|enterAlways"></android.support.v7.widget.Toolbar>
 
         <android.support.design.widget.TabLayout
-            android:id="@+id/tabs"
+            android:id="@+id/trackTabs"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:onClick="s"
+            android:overScrollMode="ifContentScrolls"
+            app:tabMode="scrollable">
 
             <android.support.design.widget.TabItem
+                android:id="@+id/tab1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tab1" />
+                android:onClick="toolbarTabsOnClick"
+                android:text="Ch 1" />
 
             <android.support.design.widget.TabItem
+                android:id="@+id/tab2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tab2" />
+                android:onClick="toolbarTabsOnClick"
+                android:text="Ch 2" />
 
             <android.support.design.widget.TabItem
+                android:id="@+id/tab3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tab3" />
+                android:onClick="toolbarTabsOnClick"
+                android:text="Ch 3" />
 
             <android.support.design.widget.TabItem
+                android:id="@+id/tab4"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tab4" />
+                android:onClick="toolbarTabsOnClick"
+                android:text="Ch 4" />
 
             <android.support.design.widget.TabItem
+                android:id="@+id/addTab"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tab5" />
+                android:onClick="toolbarTabsOnClick"
+                android:text="Add" />
         </android.support.design.widget.TabLayout>
     </android.support.design.widget.AppBarLayout>
 

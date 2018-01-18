@@ -5,7 +5,6 @@ import android.media.MediaRecorder;
 import android.media.PlaybackParams;
 import android.os.Handler;
 import android.util.Log;
-import android.widget.ProgressBar;
 
 import java.io.IOException;
 
@@ -14,13 +13,13 @@ public class SoundHandler {
     private MediaRecorder mr;
     private boolean isRecording;
     private String recordingPath;
-    private PlaybackParams params;
     private static Handler handler = new Handler(); // works like mailbox i think
-    private ProgressBar progressBar;
+    private PlaybackParams params;
+    private boolean shouldUpdateProgressbar;
 
-    public SoundHandler(String recordingPath, ProgressBar bar) {
+    public SoundHandler(String recordingPath) {
         this.recordingPath = recordingPath;
-        progressBar = bar;
+        shouldUpdateProgressbar = false;
         mp = new MediaPlayer();
         mr = new MediaRecorder();
         params = new PlaybackParams();
@@ -29,25 +28,30 @@ public class SoundHandler {
     private int getProgress(){
         return (int) (((float) mp.getCurrentPosition() / (float) mp.getDuration()) * 100);
     }
+    public void setShouldUpdateProgressbar(boolean bool) {
+        shouldUpdateProgressbar = bool;
+    }
 
     private Runnable updateProgressBar = new Runnable() {
         @Override
         public void run() {
-            progressBar.setProgress(getProgress());
+            if(shouldUpdateProgressbar)
+            MainActivity.progressBar.setProgress(getProgress());
             if(mp.getDuration() < 5000)
-                handler.postDelayed(this, 24);
+                handler.postDelayed(this, 40);
             else
                 handler.postDelayed(this, 1000);
         }
     };
 
-    public void updateParams() {
+    public void updateParams(PlaybackParams params) {
+        this.params = params;
         if (mp != null)
             if (mp.isPlaying())
                 mp.setPlaybackParams(params);
     }
 
-    public boolean tryPlay() {  // play button
+    public boolean togglePlay() {
         if (!mp.isPlaying()) {
             startPlaying();
             return true;
@@ -59,7 +63,7 @@ public class SoundHandler {
     private void stopPlaying(){
         mp.stop();
         handler.removeCallbacks(updateProgressBar);
-        progressBar.setProgress(0);
+        MainActivity.progressBar.setProgress(0);
     }
 
     private void startPlaying() {
@@ -69,12 +73,12 @@ public class SoundHandler {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        updateParams();
+        updateParams(params);
         handler.post(updateProgressBar); // has to be called after mp.start
     }
 
 
-    public boolean tryRecord() {
+    public boolean toggleRecord() {
         if (!isRecording)
             startRecording();
         else
@@ -82,7 +86,7 @@ public class SoundHandler {
         return isRecording = !isRecording;
     }
 
-    void startRecording() {
+   private void startRecording() {
         if (mp.isPlaying())
             stopPlaying();
         mr = new MediaRecorder();
@@ -98,7 +102,7 @@ public class SoundHandler {
         mr.start();
     }
 
-    void stopRecording() {
+   private void stopRecording() {
         if (mr != null) {
             mr.stop();
             mr.release();
@@ -107,12 +111,11 @@ public class SoundHandler {
         }
     }
 
-    void initMediaPlayer() {
+  private  void initMediaPlayer() {
         try {
             mp = new MediaPlayer();
             mp.setDataSource(recordingPath);
             mp.setLooping(true);
-            mp.setPlaybackParams(params);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -120,5 +123,9 @@ public class SoundHandler {
 
     public PlaybackParams getParams() {
         return params;
+    }
+
+    public boolean isPlaying() {
+        return mp.isPlaying();
     }
 }

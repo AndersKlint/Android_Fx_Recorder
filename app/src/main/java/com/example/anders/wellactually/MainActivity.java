@@ -2,14 +2,18 @@ package com.example.anders.wellactually;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.media.PlaybackParams;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.TabItem;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Adapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -19,7 +23,6 @@ import android.widget.TabHost;
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private  String recordingPath;
-    private SoundHandler soundHandler;
     private String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     private boolean permissionToWriteAccepted;
     private boolean permissionToRecordAccepted;
@@ -29,6 +32,9 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar speedBar;
     private TabHost tabHost;
     private XyPad xyPad;
+    private TabLayout trackTabs;
+
+    public static ProgressBar progressBar;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -58,12 +64,15 @@ public class MainActivity extends AppCompatActivity {
         playButton = findViewById(R.id.button2);
         playButton.setEnabled(false);
         recordButton =  findViewById(R.id.button_record);
+        trackTabs = findViewById(R.id.trackTabs);
+        trackTabs.addOnTabSelectedListener(customTabListener);
 
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
         recordingPath = getExternalCacheDir().getAbsolutePath() + "mock_recording.3gp"; // order important, has to be done after permission
-
-        soundHandler = new SoundHandler(recordingPath, (ProgressBar) findViewById(R.id.progressBar));
-        xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker),soundHandler);
+        progressBar = findViewById(R.id.progressBar);
+        SoundMixer.addMultipleTracks(recordingPath, 4);
+        SoundMixer.setCurrentTrack(0);
+        xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker));
 
     }
 
@@ -109,18 +118,17 @@ public class MainActivity extends AppCompatActivity {
 
     public void resetXyPad(View view) {
         xyPad.resetXyPad();
-        soundHandler.updateParams();
     }
 
     public void onPlay(View view) {
-        if(soundHandler.tryPlay())
+        if(SoundMixer.togglePlay())
             playButton.setText("Stop");
         else
             playButton.setText("Play");
     }
 
     public void onRecord(View view) {
-        if(soundHandler.tryRecord()) {
+        if(SoundMixer.toggleRecord()) {
             playButton.setEnabled(false);
             playButton.setText("Play");
             recordButton.setText("Stop");
@@ -132,16 +140,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void seekBarPitch(View view, float value) {
-
-    }
-
     private SeekBar.OnSeekBarChangeListener customSeekbarListener =
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    soundHandler.getParams().setPitch((float) (progress + 1) / 4);
-                    soundHandler.updateParams();
+                    PlaybackParams params = SoundMixer.getParams();
+                    params.setPitch((float) (progress + 1) / 4);
+                    SoundMixer.updateParams(params);
                 }
 
                 @Override
@@ -159,8 +164,9 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    soundHandler.getParams().setSpeed((float) (progress + 1) / 4);
-                    soundHandler.updateParams();
+                    PlaybackParams params = SoundMixer.getParams();
+                    params.setSpeed((float) (progress + 1) / 4);
+                    SoundMixer.updateParams(params);
                 }
 
                 @Override
@@ -173,5 +179,38 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             };
+
+    private TabLayout.OnTabSelectedListener customTabListener =
+            new TabLayout.OnTabSelectedListener() {
+        @Override
+        public void onTabSelected(TabLayout.Tab tab) {
+            if(tab.getPosition() == trackTabs.getTabCount() -1)
+                creatNewTab(tab);
+            else
+            SoundMixer.setCurrentTrack(tab.getPosition());
+            if(SoundMixer.currentTrackPlaying())
+                playButton.setText("Stop");
+            else
+                playButton.setEnabled(false);
+        }
+
+        @Override
+        public void onTabUnselected(TabLayout.Tab tab) {
+
+        }
+
+        @Override
+        public void onTabReselected(TabLayout.Tab tab) {
+            if(tab.getPosition() == trackTabs.getTabCount() -1)
+                creatNewTab(tab);
+
+        }
+
+        private void creatNewTab(TabLayout.Tab tab) {
+            trackTabs.addTab(trackTabs.newTab().setText("Ch" + " " + (tab.getPosition()+1)), trackTabs.getTabCount() - 1);
+            SoundMixer.addTrack();
+            SoundMixer.setCurrentTrack(tab.getPosition()-1);
+        }
+    };
 
 }

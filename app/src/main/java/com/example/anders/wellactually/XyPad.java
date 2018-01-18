@@ -8,16 +8,15 @@ import android.widget.ImageView;
 public class XyPad {
     private ImageView xySeeker;
     private PlaybackParams params;
-    private SoundHandler soundHandler;
 
 
-    public XyPad(ImageView xySeeker, SoundHandler soundHandler) {
-        this.soundHandler = soundHandler;
+    public XyPad(ImageView xySeeker ) {
         this.xySeeker = xySeeker;
-        this.params = soundHandler.getParams();
+        this.params = SoundMixer.getParams();
     }
 
     public void onClick(View view) {
+        params = SoundMixer.getParams();
        view.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -47,7 +46,7 @@ public class XyPad {
                     updatedParams = true;
                 }
                 if(updatedParams)
-                    soundHandler.updateParams();
+                    SoundMixer.updateParams(params);
                 return true;
             }
         });
@@ -56,7 +55,9 @@ public class XyPad {
     public void resetXyPad() {
         xySeeker.setX(((View) xySeeker.getParent()).getWidth()/2 - xySeeker.getWidth()/2);
         xySeeker.setY(((View) xySeeker.getParent()).getHeight()/2 - xySeeker.getHeight()/2);
+        this.params = SoundMixer.getParams();
         params.setSpeed(1f);
         params.setPitch(1f);
+        SoundMixer.updateParams(params);
     }
 }
