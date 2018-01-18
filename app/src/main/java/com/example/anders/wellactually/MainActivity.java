@@ -20,6 +20,8 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TabHost;
 
+import com.google.android.exoplayer2.PlaybackParameters;
+
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private  String recordingPath;
@@ -68,9 +70,9 @@ public class MainActivity extends AppCompatActivity {
         trackTabs.addOnTabSelectedListener(customTabListener);
 
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
-        recordingPath = getExternalCacheDir().getAbsolutePath() + "mock_recording.3gp"; // order important, has to be done after permission
+        recordingPath = getExternalCacheDir().getAbsolutePath(); // order important, has to be done after permission
         progressBar = findViewById(R.id.progressBar);
-        SoundMixer.addMultipleTracks(recordingPath, 4);
+        SoundMixer.addMultipleTracks(this,recordingPath, 4);
         SoundMixer.setCurrentTrack(0);
         xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker));
 
@@ -144,9 +146,8 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    PlaybackParams params = SoundMixer.getParams();
-                    params.setPitch((float) (progress + 1) / 4);
-                    SoundMixer.updateParams(params);
+                    PlaybackParameters params = SoundMixer.getParams();
+                    SoundMixer.updateParams(new PlaybackParameters(params.speed,((float) (progress + 1) / 4)));
                 }
 
                 @Override
@@ -164,9 +165,8 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    PlaybackParams params = SoundMixer.getParams();
-                    params.setSpeed((float) (progress + 1) / 4);
-                    SoundMixer.updateParams(params);
+                    PlaybackParameters params = SoundMixer.getParams();
+                    SoundMixer.updateParams(new PlaybackParameters((float) (progress + 1) / 4, params.pitch));
                 }
 
                 @Override
@@ -184,14 +184,24 @@ public class MainActivity extends AppCompatActivity {
             new TabLayout.OnTabSelectedListener() {
         @Override
         public void onTabSelected(TabLayout.Tab tab) {
-            if(tab.getPosition() == trackTabs.getTabCount() -1)
+            if(tab.getPosition() == trackTabs.getTabCount() -1) // last tab is add new tab button
                 creatNewTab(tab);
             else
             SoundMixer.setCurrentTrack(tab.getPosition());
-            if(SoundMixer.currentTrackPlaying())
-                playButton.setText("Stop");
-            else
+            if(SoundMixer.currentTrackInitialized()) {
+                playButton.setEnabled(true);
+                if(SoundMixer.currentTrackPlaying())
+                    playButton.setText("Stop"); //!!
+                else {
+                    playButton.setText("Play");
+                    progressBar.setProgress(0);
+                }
+            }
+            else {
                 playButton.setEnabled(false);
+                playButton.setText("Stop"); //!!
+                progressBar.setProgress(0);
+            }
         }
 
         @Override
@@ -208,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
 
         private void creatNewTab(TabLayout.Tab tab) {
             trackTabs.addTab(trackTabs.newTab().setText("Ch" + " " + (tab.getPosition()+1)), trackTabs.getTabCount() - 1);
-            SoundMixer.addTrack();
+            SoundMixer.addTrack(getBaseContext()); // context=???? will this work?=??
             SoundMixer.setCurrentTrack(tab.getPosition()-1);
         }
     };

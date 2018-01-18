@@ -5,9 +5,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.google.android.exoplayer2.PlaybackParameters;
+
 public class XyPad {
     private ImageView xySeeker;
-    private PlaybackParams params;
+    private PlaybackParameters params;
 
 
     public XyPad(ImageView xySeeker ) {
@@ -20,6 +22,8 @@ public class XyPad {
        view.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+                float newSpeed = 1;
+                float newPitch = 1;
                 float x = event.getX();
                 float y = event.getY();
                 float seekerHalfWidth = xySeeker.getWidth() / 2;
@@ -38,15 +42,15 @@ public class XyPad {
                 xySeeker.setY(y - seekerHalfHeight);
                 boolean updatedParams = false;
                 if (xScale > 0.05 && xScale < 0.95) { // safe param limits for rounding
-                    params.setSpeed(xScale * 2);
+                    newSpeed = xScale * 2;
                     updatedParams = true;
                 }
                 if (yScale > 0.05 && yScale < 0.95) {
-                    params.setPitch((1 - yScale) * 2);
+                   newPitch = (1 - yScale) * 2;
                     updatedParams = true;
                 }
                 if(updatedParams)
-                    SoundMixer.updateParams(params);
+                    SoundMixer.updateParams(new PlaybackParameters(newSpeed,newPitch));
                 return true;
             }
         });
@@ -56,8 +60,6 @@ public class XyPad {
         xySeeker.setX(((View) xySeeker.getParent()).getWidth()/2 - xySeeker.getWidth()/2);
         xySeeker.setY(((View) xySeeker.getParent()).getHeight()/2 - xySeeker.getHeight()/2);
         this.params = SoundMixer.getParams();
-        params.setSpeed(1f);
-        params.setPitch(1f);
-        SoundMixer.updateParams(params);
+        SoundMixer.updateParams(new PlaybackParameters(1,1));
     }
 }

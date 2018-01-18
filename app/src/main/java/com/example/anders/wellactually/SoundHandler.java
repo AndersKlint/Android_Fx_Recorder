@@ -1,33 +1,53 @@
 package com.example.anders.wellactually;
 
+import android.content.Context;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
-import android.media.PlaybackParams;
+import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
+
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
 
 import java.io.IOException;
 
 public class SoundHandler {
-    private MediaPlayer mp;
+    private ExoPlayer exoPlayer;
     private MediaRecorder mr;
     private boolean isRecording;
     private String recordingPath;
     private static Handler handler = new Handler(); // works like mailbox i think
-    private PlaybackParams params;
+    private PlaybackParameters params;
     private boolean shouldUpdateProgressbar;
+    private Context context;
+    private MediaSource mediaSource;
+    private boolean isInitialized;
 
-    public SoundHandler(String recordingPath) {
+    public SoundHandler(Context context, String recordingPath) {
+        this.context = context;
         this.recordingPath = recordingPath;
         shouldUpdateProgressbar = false;
-        mp = new MediaPlayer();
+        exoPlayer =
+                ExoPlayerFactory.newSimpleInstance(
+                        context, new DefaultTrackSelector());
         mr = new MediaRecorder();
-        params = new PlaybackParams();
+        params = new PlaybackParameters(1, 1);
     }
 
-    private int getProgress(){
-        return (int) (((float) mp.getCurrentPosition() / (float) mp.getDuration()) * 100);
+    private int getProgress() {
+        return (int) (((float) exoPlayer.getCurrentPosition() / (float) exoPlayer.getDuration()) * 100);
     }
+
     public void setShouldUpdateProgressbar(boolean bool) {
         shouldUpdateProgressbar = bool;
     }
@@ -35,24 +55,24 @@ public class SoundHandler {
     private Runnable updateProgressBar = new Runnable() {
         @Override
         public void run() {
-            if(shouldUpdateProgressbar)
-            MainActivity.progressBar.setProgress(getProgress());
-            if(mp.getDuration() < 5000)
+            if (shouldUpdateProgressbar)
+                MainActivity.progressBar.setProgress(getProgress());
+            if (exoPlayer.getDuration() < 5000)
                 handler.postDelayed(this, 40);
             else
                 handler.postDelayed(this, 1000);
         }
     };
 
-    public void updateParams(PlaybackParams params) {
+    public void updateParams(PlaybackParameters params) {
         this.params = params;
-        if (mp != null)
-            if (mp.isPlaying())
-                mp.setPlaybackParams(params);
+        if (exoPlayer != null)
+            if (exoPlayer.getPlayWhenReady())
+                exoPlayer.setPlaybackParameters(params);
     }
 
     public boolean togglePlay() {
-        if (!mp.isPlaying()) {
+        if (!exoPlayer.getPlayWhenReady()) {
             startPlaying();
             return true;
         }
@@ -60,21 +80,17 @@ public class SoundHandler {
         return false;
     }
 
-    private void stopPlaying(){
-        mp.stop();
+    private void stopPlaying() {
+        exoPlayer.setPlayWhenReady(false);
+        exoPlayer.seekTo(0);    // stop work around without havin to init again
         handler.removeCallbacks(updateProgressBar);
         MainActivity.progressBar.setProgress(0);
     }
 
     private void startPlaying() {
-        try {
-            mp.prepare();
-            mp.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        exoPlayer.setPlayWhenReady(true);
         updateParams(params);
-        handler.post(updateProgressBar); // has to be called after mp.start
+        handler.post(updateProgressBar); // has to be called after exoPlayer.start
     }
 
 
@@ -86,9 +102,9 @@ public class SoundHandler {
         return isRecording = !isRecording;
     }
 
-   private void startRecording() {
-        if (mp.isPlaying())
-            stopPlaying();
+    private void startRecording() {
+        stopPlaying();
+        exoPlayer.release();    // important to free up memory, should also be called on program exit i think
         mr = new MediaRecorder();
         mr.setAudioSource(MediaRecorder.AudioSource.MIC);
         mr.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
@@ -102,7 +118,7 @@ public class SoundHandler {
         mr.start();
     }
 
-   private void stopRecording() {
+    private void stopRecording() {
         if (mr != null) {
             mr.stop();
             mr.release();
@@ -111,21 +127,29 @@ public class SoundHandler {
         }
     }
 
-  private  void initMediaPlayer() {
-        try {
-            mp = new MediaPlayer();
-            mp.setDataSource(recordingPath);
-            mp.setLooping(true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private void initMediaPlayer() {
+        exoPlayer =
+                ExoPlayerFactory.newSimpleInstance(
+                        context, new DefaultTrackSelector());
+        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
+                Util.getUserAgent(context, "Well Actually"), null);
+        mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(Uri.parse(recordingPath));
+        exoPlayer.setRepeatMode(Player.REPEAT_MODE_ALL);
+        exoPlayer.prepare(mediaSource);
+        isInitialized = true;
+
     }
 
-    public PlaybackParams getParams() {
+    public PlaybackParameters getParams() {
         return params;
     }
 
     public boolean isPlaying() {
-        return mp.isPlaying();
+        return exoPlayer.getPlayWhenReady();
+    }
+
+    public boolean isInitialized() {
+        return isInitialized;
     }
 }
