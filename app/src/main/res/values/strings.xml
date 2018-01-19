@@ -3,4 +3,13 @@
     <string name="action_settings">Settings</string>
     <string name="text_field_1">Cyka press it</string>
     <string name="button_actually">Play</string>
+    <string-array name="bpm_dropdown">
+        <item>Free</item>
+        <item>Custom</item>
+        <item>80</item>
+        <item>100</item>
+        <item>120</item>
+        <item>130</item>
+        <item>140</item>
+    </string-array>
 </resources>

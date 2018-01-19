@@ -81,6 +81,7 @@ public class SoundHandler {
     }
 
     private void stopPlaying() {
+        MainActivity.playButton.setText("Play");
         exoPlayer.setPlayWhenReady(false);
         exoPlayer.seekTo(0);    // stop work around without havin to init again
         handler.removeCallbacks(updateProgressBar);
@@ -88,22 +89,25 @@ public class SoundHandler {
     }
 
     private void startPlaying() {
+        MainActivity.playButton.setText("Stop");
         exoPlayer.setPlayWhenReady(true);
         updateParams(params);
         handler.post(updateProgressBar); // has to be called after exoPlayer.start
     }
 
 
-    public boolean toggleRecord() {
+    public boolean toggleRecord(int duration) {
         if (!isRecording)
-            startRecording();
+            startRecording(duration);
         else
             stopRecording();
         return isRecording = !isRecording;
     }
 
-    private void startRecording() {
+    private void startRecording(int duration) {
         stopPlaying();
+        MainActivity.recordButton.setText("Stop");
+        MainActivity.playButton.setEnabled(false);
         exoPlayer.release();    // important to free up memory, should also be called on program exit i think
         mr = new MediaRecorder();
         mr.setAudioSource(MediaRecorder.AudioSource.MIC);
@@ -111,19 +115,39 @@ public class SoundHandler {
         mr.setOutputFile(recordingPath);
         mr.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
         try {
-            mr.prepare();
+            if (duration > 0) {
+                mr.setMaxDuration(duration);
+                mr.setOnInfoListener(mediaRecorderListener);
+                MainActivity.recordButton.setEnabled(false);
+            }
+                mr.prepare();
+                mr.start();
         } catch (IOException e) {
             Log.e("Audio recording:", "prepare() failed");
         }
-        mr.start();
     }
+
+    private MediaRecorder.OnInfoListener mediaRecorderListener = new MediaRecorder.OnInfoListener() {
+        @Override
+        public void onInfo(MediaRecorder mr, int what, int extra) {
+            if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+                isRecording = !isRecording; // code smells
+                stopRecording();
+                MainActivity.recordButton.setEnabled(true);
+            }
+        }
+    };
 
     private void stopRecording() {
         if (mr != null) {
+            MainActivity.recordButton.setText("Record");
+            MainActivity.playButton.setText("Stop");
+            MainActivity.playButton.setEnabled(true);
             mr.stop();
             mr.release();
             mr = null;
             initMediaPlayer();
+            startPlaying();
         }
     }
 
