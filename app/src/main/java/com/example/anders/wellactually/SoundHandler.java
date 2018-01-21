@@ -1,3 +1,4 @@
+/*
 package com.example.anders.wellactually;
 
 import android.content.Context;
@@ -83,7 +84,7 @@ public class SoundHandler {
     private void stopPlaying() {
         MainActivity.playButton.setText("Play");
         exoPlayer.setPlayWhenReady(false);
-        exoPlayer.seekTo(0);    // stop work around without havin to init again
+        exoPlayer.seekTo(0);    // stop workaround without having to init again
         handler.removeCallbacks(updateProgressBar);
         MainActivity.progressBar.setProgress(0);
     }
@@ -176,4 +177,4 @@ public class SoundHandler {
     public boolean isInitialized() {
         return isInitialized;
     }
-}
+}*/

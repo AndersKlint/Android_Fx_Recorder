@@ -85,41 +85,62 @@
             android:layout_height="match_parent"
             tools:context="com.example.anders.wellactually.MainActivity">
 
-            <LinearLayout
+            <android.support.constraint.ConstraintLayout
                 android:id="@+id/linearLayout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="4dp"
-                android:orientation="horizontal"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
-                <Spinner
-                    android:id="@+id/bpmSpinner"
-                    android:layout_width="110dp"
+                <TextView
+                    android:id="@+id/textView6"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_weight="1"
-                    android:dropDownWidth="110dp"
-                    android:entries="@android:drawable/btn_dropdown"
-                    android:minWidth="100dp"
+                    android:text="BPM:"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <EditText
+                <Spinner
+                    android:id="@+id/bpmSpinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:width="20dp"
+                    android:dropDownWidth="120dp"
+                    android:entries="@android:drawable/btn_dropdown"
+                    android:minWidth="80dp"
+                    android:textAlignment="viewEnd"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/textView8"
+                    app:layout_constraintHorizontal_bias="0.482"
+                    app:layout_constraintStart_toEndOf="@+id/textView6"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/textView8"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Bars:"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/barsText"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <EditText
+                    android:id="@+id/barsText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:width="40dp"
                     android:ems="10"
                     android:inputType="number"
-                    android:maxWidth="20dp"
-                    android:minWidth="10dp" />
-            </LinearLayout>
+                    android:maxWidth="80dp"
+                    android:minWidth="30dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </android.support.constraint.ConstraintLayout>
 
             <android.support.constraint.ConstraintLayout
                 android:id="@+id/frameLayout2"
@@ -373,6 +394,16 @@
                     </FrameLayout>
                 </LinearLayout>
             </TabHost>
+
+            <CheckBox
+                android:id="@+id/metronomeCheckBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="16dp"
+                android:layout_marginTop="16dp"
+                android:text="Metronome"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
         </android.support.constraint.ConstraintLayout>
     </FrameLayout>

@@ -2,7 +2,6 @@ package com.example.anders.wellactually;
 
 import android.Manifest;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -11,6 +10,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,8 +34,6 @@ public class MainActivity extends AppCompatActivity {
     private String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     private boolean permissionToWriteAccepted;
     private boolean permissionToRecordAccepted;
-    public static Button playButton;
-    public static Button recordButton;
     private SeekBar pitchBar;
     private SeekBar speedBar;
     private TabHost tabHost;
@@ -70,9 +69,10 @@ public class MainActivity extends AppCompatActivity {
         speedBar = findViewById(R.id.seekBar3);
         pitchBar.setOnSeekBarChangeListener(customSeekbarListener);
         speedBar.setOnSeekBarChangeListener(customSeekbarListenerSpeed);
-        playButton = findViewById(R.id.button2);
+        Button playButton = findViewById(R.id.button2);
         playButton.setEnabled(false);
-        recordButton = findViewById(R.id.button_record);
+        Button recordButton = findViewById(R.id.button_record);
+        PlaybackButtons playbackButtons = new PlaybackButtons(playButton,recordButton);
         trackTabs = findViewById(R.id.trackTabs);
         trackTabs.addOnTabSelectedListener(customTabListener);
 
@@ -87,11 +87,31 @@ public class MainActivity extends AppCompatActivity {
         bpmSpinner.setOnItemSelectedListener(customSpinnerListener);
 
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
-        recordingPath = getExternalCacheDir().getAbsolutePath(); // order important, has to be done after permission
-        progressBar = findViewById(R.id.progressBar);
-        SoundMixer.init(this, recordingPath, 4);
+        recordingPath = getExternalCacheDir().getAbsolutePath();  // order important, has to be done after permission
+        AudioProgressBar.init((ProgressBar) findViewById(R.id.progressBar));
+        SoundMixer.init(this, recordingPath, 4, playbackButtons);
         SoundMixer.setCurrentTrack(0);
         xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker));
+
+        EditText barsText = findViewById(R.id.barsText);
+        barsText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String text = s.toString();
+                if (text.length() <= 0)
+                    text = "1";
+                SoundMixer.setCurrentBars(Integer.parseInt(text));
+            }
+        });
 
     }
 
@@ -205,8 +225,7 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    PlaybackParameters params = SoundMixer.getParams();
-                    SoundMixer.updateParams(new PlaybackParameters(params.speed, ((float) (progress + 1) / 4)));
+                    SoundMixer.updatePitch((progress + 1) / 4);
                 }
 
                 @Override
@@ -224,8 +243,7 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    PlaybackParameters params = SoundMixer.getParams();
-                    SoundMixer.updateParams(new PlaybackParameters((float) (progress + 1) / 4, params.pitch));
+                    SoundMixer.updateSpeed((float) (progress + 1) / 4);
                 }
 
 
@@ -248,19 +266,6 @@ public class MainActivity extends AppCompatActivity {
                         creatNewTab(tab);
                     else
                         SoundMixer.setCurrentTrack(tab.getPosition());
-                    if (SoundMixer.currentTrackInitialized()) {
-                        playButton.setEnabled(true);
-                        if (SoundMixer.currentTrackPlaying())
-                            playButton.setText("Stop"); //!!
-                        else {
-                            playButton.setText("Play");
-                            progressBar.setProgress(0);
-                        }
-                    } else {
-                        playButton.setEnabled(false);
-                        playButton.setText("Stop"); //!!
-                        progressBar.setProgress(0);
-                    }
                 }
 
                 @Override
