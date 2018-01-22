@@ -1,22 +1,21 @@
 package com.example.anders.wellactually;
 
-import android.media.PlaybackParams;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
-
-import com.google.android.exoplayer2.PlaybackParameters;
 
 public class XyPad {
     private ImageView xySeeker;
 
 
-    public XyPad(ImageView xySeeker) {
+    public XyPad(ImageView xySeeker, View trackPad) {
         this.xySeeker = xySeeker;
+        onTouched(trackPad);
+
     }
 
-    public void onClick(View view) {
-        view.setOnTouchListener(new View.OnTouchListener() {
+    private void onTouched(View trackPad) {
+        trackPad.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 float x = event.getX();
@@ -31,23 +30,22 @@ public class XyPad {
                     y = seekerHalfHeight;
                 else if (y > v.getHeight() - seekerHalfHeight)
                     y = v.getHeight() - seekerHalfHeight;
-                float xScale = x / v.getWidth();
-                float yScale = y / v.getHeight();
+                float xScale = x / ((float) v.getWidth());
+                float yScale = y / ((float) v.getHeight());
                 xySeeker.setX(x - seekerHalfWidth);  // to fix origin to center
                 xySeeker.setY(y - seekerHalfHeight);
-                if (xScale > 0.05 && xScale < 0.95)  // safe param limits for rounding
-                    SoundMixer.updateSpeed(xScale * 2);
-                if (yScale > 0.05 && yScale < 0.95)
-                    SoundMixer.updatePitch((1 - yScale) * 2);
+                    SoundMixer.setCurrentSpeed(xScale * 2);
+                    SoundMixer.setCurrentPitch((1 - yScale) * 2);
                 return true;
             }
         });
     }
 
+
     public void resetXyPad() {
         xySeeker.setX(((View) xySeeker.getParent()).getWidth() / 2 - xySeeker.getWidth() / 2);
         xySeeker.setY(((View) xySeeker.getParent()).getHeight() / 2 - xySeeker.getHeight() / 2);
-        SoundMixer.updateSpeed(1f);
-        SoundMixer.updatePitch(1f);
+        SoundMixer.setCurrentSpeed(1);
+        SoundMixer.setCurrentPitch(1);
     }
 }

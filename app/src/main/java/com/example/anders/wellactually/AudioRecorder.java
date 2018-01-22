@@ -42,11 +42,13 @@ public class AudioRecorder {
             }
             recorder.prepare();
             isRecording = true;
+            SoundMixer.tryPlayMetronome();
             recorder.start();
         } catch (IOException e) {
             Log.e("Audio recording:", "prepare() failed");
         }
     }
+
 
     private void stopRecording() {
         isRecording = false;
@@ -59,7 +61,7 @@ public class AudioRecorder {
         @Override
         public void onInfo(MediaRecorder mr, int what, int extra) {
             if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED)
-                SoundMixer.toggleRecord(); // is this bad? Probably
+                SoundMixer.toggleRecord(); // Is this bad? Probably. Does it work? Yes.
         }
     };
 

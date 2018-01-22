@@ -107,12 +107,14 @@
 
                 <Spinner
                     android:id="@+id/bpmSpinner"
-                    android:layout_width="wrap_content"
+                    style="@style/Widget.AppCompat.Light.Spinner.DropDown.ActionBar"
+                    android:layout_width="100dp"
                     android:layout_height="wrap_content"
-                    android:dropDownWidth="120dp"
+                    android:dropDownWidth="100dp"
                     android:entries="@android:drawable/btn_dropdown"
-                    android:minWidth="80dp"
-                    android:textAlignment="viewEnd"
+                    android:maxWidth="130dp"
+                    android:minWidth="100dp"
+                    android:textAlignment="center"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@+id/textView8"
                     app:layout_constraintHorizontal_bias="0.482"
@@ -132,11 +134,13 @@
                     android:id="@+id/barsText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:width="40dp"
+                    android:width="30dp"
                     android:ems="10"
                     android:inputType="number"
-                    android:maxWidth="80dp"
+                    android:maxLength="2"
+                    android:maxWidth="40dp"
                     android:minWidth="30dp"
+                    android:text="1"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -399,11 +403,16 @@
                 android:id="@+id/metronomeCheckBox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
                 android:layout_marginLeft="16dp"
                 android:layout_marginTop="16dp"
+                android:onClick="metronomeCheckBoxOnClick"
                 android:text="Metronome"
+                app:layout_constraintBottom_toTopOf="@+id/tabHost"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toBottomOf="@+id/frameLayout2" />
 
         </android.support.constraint.ConstraintLayout>
     </FrameLayout>

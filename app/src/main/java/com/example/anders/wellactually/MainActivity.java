@@ -19,14 +19,13 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TabHost;
-
-import com.google.android.exoplayer2.PlaybackParameters;
 
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
@@ -75,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
         PlaybackButtons playbackButtons = new PlaybackButtons(playButton,recordButton);
         trackTabs = findViewById(R.id.trackTabs);
         trackTabs.addOnTabSelectedListener(customTabListener);
+        trackTabs.setClickable(false);
 
         bpmSpinner = findViewById(R.id.bpmSpinner);
 // Create an ArrayAdapter using the string array and a default spinner layout
@@ -88,10 +88,10 @@ public class MainActivity extends AppCompatActivity {
 
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
         recordingPath = getExternalCacheDir().getAbsolutePath();  // order important, has to be done after permission
-        AudioProgressBar.init((ProgressBar) findViewById(R.id.progressBar));
-        SoundMixer.init(this, recordingPath, 4, playbackButtons);
+        AudioProgressBar audioProgressBar = new AudioProgressBar((ProgressBar) findViewById(R.id.progressBar));
+        SoundMixer.init(this, recordingPath, 4, playbackButtons, audioProgressBar, trackTabs);
         SoundMixer.setCurrentTrack(0);
-        xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker));
+        xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker), findViewById(R.id.xyPad));
 
         EditText barsText = findViewById(R.id.barsText);
         barsText.addTextChangedListener(new TextWatcher() {
@@ -152,8 +152,8 @@ public class MainActivity extends AppCompatActivity {
         tabHost.addTab(spec);
     }
 
-    public void xyPadOnClick(View view) {
-        xyPad.onClick(view);
+    public void metronomeCheckBoxOnClick(View view) {
+        SoundMixer.setUseMetronome(((CheckBox) view).isChecked());
     }
 
     public void resetXyPad(View view) {
@@ -225,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    SoundMixer.updatePitch((progress + 1) / 4);
+                    SoundMixer.setCurrentPitch((progress + 1) / 4);
                 }
 
                 @Override
@@ -243,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    SoundMixer.updateSpeed((float) (progress + 1) / 4);
+                    SoundMixer.setCurrentSpeed((float) (progress + 1) / 4);
                 }
 
 
@@ -262,10 +262,16 @@ public class MainActivity extends AppCompatActivity {
             new TabLayout.OnTabSelectedListener() {
                 @Override
                 public void onTabSelected(TabLayout.Tab tab) {
-                    if (tab.getPosition() == trackTabs.getTabCount() - 1) // last tab is add new tab button
-                        creatNewTab(tab);
-                    else
-                        SoundMixer.setCurrentTrack(tab.getPosition());
+                    if (SoundMixer.CURRENT_STATE == SoundMixer.STATE_RECORDING) {
+
+                    }
+                    else {
+
+                        if (tab.getPosition() == trackTabs.getTabCount() - 1) // last tab is add new tab button
+                            createNewTab(tab);
+                        else
+                            SoundMixer.setCurrentTrack(tab.getPosition());
+                    }
                 }
 
                 @Override
@@ -276,11 +282,11 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onTabReselected(TabLayout.Tab tab) {
                     if (tab.getPosition() == trackTabs.getTabCount() - 1)
-                        creatNewTab(tab);
+                        createNewTab(tab);
 
                 }
 
-                private void creatNewTab(TabLayout.Tab tab) {
+                private void createNewTab(TabLayout.Tab tab) {
                     trackTabs.addTab(trackTabs.newTab().setText("Ch" + " " + (tab.getPosition() + 1)), trackTabs.getTabCount() - 1);
                     SoundMixer.addTrack(getBaseContext()); // context=???? will this work?=??
                     SoundMixer.setCurrentTrack(tab.getPosition() - 1);

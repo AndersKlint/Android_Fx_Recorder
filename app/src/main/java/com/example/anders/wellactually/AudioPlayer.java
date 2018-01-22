@@ -3,6 +3,7 @@ package com.example.anders.wellactually;
 import android.content.Context;
 import android.net.Uri;
 
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.PlaybackParameters;
@@ -27,7 +28,6 @@ public class AudioPlayer {
     private Context context;
     private String filePath;
     private SimpleExoPlayer player;
-    private PlaybackParameters params;
     private boolean isInitialized;
 
     public AudioPlayer(Context context, String filePath ) {
@@ -52,7 +52,6 @@ public class AudioPlayer {
                 .createMediaSource(Uri.parse(filePath));
         player.setRepeatMode(Player.REPEAT_MODE_ALL);
         player.prepare(mediaSource);
-        params = player.getPlaybackParameters();
         isInitialized = true;
     }
 
@@ -63,13 +62,13 @@ public class AudioPlayer {
 
 
     public void setPitch(float pitch) {
-        float oldSpeed = params.speed;
-        params = new PlaybackParameters(oldSpeed, pitch);
+        float oldSpeed = player.getPlaybackParameters().speed;
+        player.setPlaybackParameters(new PlaybackParameters(oldSpeed, pitch));
     }
 
     public void setSpeed(float speed) {
-        float oldPitch = params.pitch;
-        params = new PlaybackParameters(speed, oldPitch);
+        float oldPitch = player.getPlaybackParameters().pitch;
+        player.setPlaybackParameters(new PlaybackParameters(speed, oldPitch));
     }
 
     public boolean togglePlay() {
