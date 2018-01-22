@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout trackTabs;
     private Spinner bpmSpinner;
     private ArrayAdapter<CharSequence> spinnerAdapter;
+    private SoundMixer soundMixer;
 
     public static ProgressBar progressBar;
 
@@ -71,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         Button playButton = findViewById(R.id.button2);
         playButton.setEnabled(false);
         Button recordButton = findViewById(R.id.button_record);
-        PlaybackButtons playbackButtons = new PlaybackButtons(playButton,recordButton);
+        PlaybackButtons playbackButtons = new PlaybackButtons(playButton, recordButton);
         trackTabs = findViewById(R.id.trackTabs);
         trackTabs.addOnTabSelectedListener(customTabListener);
         trackTabs.setClickable(false);
@@ -89,9 +90,11 @@ public class MainActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
         recordingPath = getExternalCacheDir().getAbsolutePath();  // order important, has to be done after permission
         AudioProgressBar audioProgressBar = new AudioProgressBar((ProgressBar) findViewById(R.id.progressBar));
-        SoundMixer.init(this, recordingPath, 4, playbackButtons, audioProgressBar, trackTabs);
-        SoundMixer.setCurrentTrack(0);
-        xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker), findViewById(R.id.xyPad));
+        soundMixer = new SoundMixer();
+        soundMixer.setCustomStateChangedListener(playbackButtons);
+        soundMixer.init(this, recordingPath, 4, audioProgressBar, trackTabs);
+        soundMixer.setCurrentTrack(0);
+        xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker), findViewById(R.id.xyPad), soundMixer);
 
         EditText barsText = findViewById(R.id.barsText);
         barsText.addTextChangedListener(new TextWatcher() {
@@ -109,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 String text = s.toString();
                 if (text.length() <= 0)
                     text = "1";
-                SoundMixer.setCurrentBars(Integer.parseInt(text));
+                soundMixer.setCurrentBars(Integer.parseInt(text));
             }
         });
 
@@ -153,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void metronomeCheckBoxOnClick(View view) {
-        SoundMixer.setUseMetronome(((CheckBox) view).isChecked());
+        soundMixer.setUseMetronome(((CheckBox) view).isChecked());
     }
 
     public void resetXyPad(View view) {
@@ -161,12 +164,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onPlay(View view) {
-        SoundMixer.togglePlay();
+        soundMixer.togglePlay();
 
     }
 
     public void onRecord(View view) {
-        SoundMixer.toggleRecord();
+        soundMixer.toggleRecord();
 
     }
 
@@ -186,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                     inputText = "10";
                 else if(Integer.valueOf(inputText) > 500)
                     inputText = "500";
-                SoundMixer.setBpm(inputText);
+                soundMixer.setBpm(inputText);
          //       spinnerAdapter.add(inputText);
        //         spinnerAdapter.notifyDataSetChanged();
             //    Spinner temp = findViewById(R.id.bpmSpinner);
@@ -212,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
                         showBpmDialog();
                     }
                     else
-                        SoundMixer.setBpm((String) parent.getItemAtPosition(position));
+                        soundMixer.setBpm((String) parent.getItemAtPosition(position));
                 }
 
                 @Override
@@ -225,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    SoundMixer.setCurrentPitch((progress + 1) / 4);
+                    soundMixer.setCurrentPitch((progress + 1) / 4);
                 }
 
                 @Override
@@ -243,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
             new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                    SoundMixer.setCurrentSpeed((float) (progress + 1) / 4);
+                    soundMixer.setCurrentSpeed((float) (progress + 1) / 4);
                 }
 
 
@@ -262,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
             new TabLayout.OnTabSelectedListener() {
                 @Override
                 public void onTabSelected(TabLayout.Tab tab) {
-                    if (SoundMixer.CURRENT_STATE == SoundMixer.STATE_RECORDING) {
+                    if (soundMixer.CURRENT_STATE == SoundMixer.STATE_RECORDING) {
 
                     }
                     else {
@@ -270,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
                         if (tab.getPosition() == trackTabs.getTabCount() - 1) // last tab is add new tab button
                             createNewTab(tab);
                         else
-                            SoundMixer.setCurrentTrack(tab.getPosition());
+                            soundMixer.setCurrentTrack(tab.getPosition());
                     }
                 }
 
@@ -288,8 +291,8 @@ public class MainActivity extends AppCompatActivity {
 
                 private void createNewTab(TabLayout.Tab tab) {
                     trackTabs.addTab(trackTabs.newTab().setText("Ch" + " " + (tab.getPosition() + 1)), trackTabs.getTabCount() - 1);
-                    SoundMixer.addTrack(getBaseContext()); // context=???? will this work?=??
-                    SoundMixer.setCurrentTrack(tab.getPosition() - 1);
+                    soundMixer.addTrack(getBaseContext()); // context=???? will this work?=??
+                    soundMixer.setCurrentTrack(tab.getPosition() - 1);
                 }
             };
 

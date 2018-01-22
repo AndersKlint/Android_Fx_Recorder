@@ -6,9 +6,11 @@ import android.widget.ImageView;
 
 public class XyPad {
     private ImageView xySeeker;
+    private SoundMixer soundMixer;
 
 
-    public XyPad(ImageView xySeeker, View trackPad) {
+    public XyPad(ImageView xySeeker, View trackPad, SoundMixer soundMixer) {
+        this.soundMixer = soundMixer;
         this.xySeeker = xySeeker;
         onTouched(trackPad);
 
@@ -34,8 +36,8 @@ public class XyPad {
                 float yScale = y / ((float) v.getHeight());
                 xySeeker.setX(x - seekerHalfWidth);  // to fix origin to center
                 xySeeker.setY(y - seekerHalfHeight);
-                    SoundMixer.setCurrentSpeed(xScale * 2);
-                    SoundMixer.setCurrentPitch((1 - yScale) * 2);
+                soundMixer.setCurrentSpeed(xScale * 2);
+                soundMixer.setCurrentPitch((1 - yScale) * 2);
                 return true;
             }
         });
@@ -45,7 +47,7 @@ public class XyPad {
     public void resetXyPad() {
         xySeeker.setX(((View) xySeeker.getParent()).getWidth() / 2 - xySeeker.getWidth() / 2);
         xySeeker.setY(((View) xySeeker.getParent()).getHeight() / 2 - xySeeker.getHeight() / 2);
-        SoundMixer.setCurrentSpeed(1);
-        SoundMixer.setCurrentPitch(1);
+        soundMixer.setCurrentSpeed(1);
+        soundMixer.setCurrentPitch(1);
     }
 }

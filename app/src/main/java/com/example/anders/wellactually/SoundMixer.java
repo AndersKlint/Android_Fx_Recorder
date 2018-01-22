@@ -3,6 +3,7 @@ package com.example.anders.wellactually;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.os.Handler;
 import android.support.design.widget.TabLayout;
 import android.widget.LinearLayout;
 
@@ -12,43 +13,51 @@ import java.util.LinkedList;
  * Created by Anders on 18/01/2018.
  */
 
-public final class SoundMixer {
-    private static LinkedList<AudioPlayer> audioPlayers = new LinkedList<AudioPlayer>();
-    private static AudioPlayer currentPlayer;
-    private static AudioRecorder audioRecorder;
-    private static String soundPath;
-    private static int nbrOfTracks;
-    private static int currentBpmDuration;
-    private static int currentBars;
-    private static PlaybackButtons PLAYBACK_BUTTONS;
-    private static AudioProgressBar audioProgressBar;
-    private static TabLayout tabLayout;
-    private static boolean useMetronome = false;
+public final class SoundMixer implements OnStateChangedListener {
+    private LinkedList<AudioPlayer> audioPlayers = new LinkedList<AudioPlayer>();
+    private AudioPlayer currentPlayer;
+    private AudioRecorder audioRecorder;
+    private String soundPath;
+    private int nbrOfTracks;
+    private int currentBpmDuration;
+    private int currentBars;
+    private AudioProgressBar audioProgressBar;
+    private TabLayout tabLayout;
+    private boolean useMetronome = false;
+    private Thread recordingThread;
+    private OnStateChangedListener buttonListener;
+    private Handler handler;
 
-    public static int CURRENT_STATE;
+    public int CURRENT_STATE;
     public static final int STATE_PLAYING = 100;
     public static final int STATE_IDLE = 101;
     public static final int STATE_NO_PLAYBACK_FILE = 102;
     public static final int STATE_RECORDING = 103;
+    public static final int STATE_METRONOME_PLAYING = 104;
 
 
-    public static void init(Context context, String path, int defaultNbrOfTracks, PlaybackButtons buttons, AudioProgressBar progressBar, TabLayout trackTabs) {
+    public void init(Context context, String path, int defaultNbrOfTracks, AudioProgressBar progressBar, TabLayout trackTabs) {
+        this.handler = new Handler();
         tabLayout = trackTabs;
         soundPath = path;
         audioProgressBar = progressBar;
-        PLAYBACK_BUTTONS = buttons;
         currentBars = 1;
         CURRENT_STATE = STATE_NO_PLAYBACK_FILE;
-        audioRecorder = new AudioRecorder();
+        audioRecorder = new AudioRecorder(this);
+        audioRecorder.setCustomStateChangedListener(this);
         for (int i = 0; i < defaultNbrOfTracks; i++)
             addTrack(context);
     }
 
-    public static void addTrack(Context context) {
+    public void setCustomStateChangedListener(OnStateChangedListener listener) {
+        buttonListener = listener;
+    }
+
+    public void addTrack(Context context) {
         audioPlayers.add(new AudioPlayer(context, soundPath + "/mock_recording" + ++nbrOfTracks + ".3gp"));
     }
 
-    public static void setCurrentTrack(int index) {
+    public void setCurrentTrack(int index) {
         currentPlayer = audioPlayers.get(index);
         if (currentPlayer.isPlaying())
             audioProgressBar.setEnable(true);
@@ -58,11 +67,13 @@ public final class SoundMixer {
         }
         audioProgressBar.setPlayer(currentPlayer);
         updateStateOnCurrentPlayerChange();
-        PLAYBACK_BUTTONS.updateState(CURRENT_STATE);
+        buttonListener.stateChanged(CURRENT_STATE);
     }
 
 
-    public static void togglePlay() {
+    public void togglePlay() {
+        if (!currentPlayer.isInitialized())
+            currentPlayer.init();
         if (currentPlayer.togglePlay()) {
             audioProgressBar.setEnable(true);
             CURRENT_STATE = STATE_PLAYING;
@@ -70,23 +81,23 @@ public final class SoundMixer {
             audioProgressBar.setEnable(false);
             CURRENT_STATE = STATE_IDLE;
         }
-        PLAYBACK_BUTTONS.updateState(CURRENT_STATE);
+        buttonListener.stateChanged(CURRENT_STATE);
     }
 
-    public static void toggleRecord() {
-        currentPlayer.release();  // Called twice but I don't care.
-        if (audioRecorder.toggleRecord(currentBpmDuration * currentBars, currentPlayer.getReadPath())) {
-            CURRENT_STATE = STATE_RECORDING;
-            setEnableTrackTabs(false);
-        } else {
-            currentPlayer.init();
-            togglePlay();
-            setEnableTrackTabs(true);
+    public void toggleRecord() {
+        if(!audioRecorder.isRecording()) {
+            currentPlayer.release();
+            recordingThread = new Thread(RecordingThread);
+            recordingThread.start();
+            buttonListener.stateChanged(CURRENT_STATE);
         }
-        PLAYBACK_BUTTONS.updateState(CURRENT_STATE);
+        else {
+            recordingThread.run();
+            buttonListener.stateChanged(CURRENT_STATE);
+        }
     }
 
-    private static void setEnableTrackTabs(boolean b) {
+    private void setEnableTrackTabs(boolean b) {
         LinearLayout tabStrip = ((LinearLayout) tabLayout.getChildAt(0));
         if (b) {
             tabStrip.setEnabled(true);
@@ -101,11 +112,11 @@ public final class SoundMixer {
         }
     }
 
-    public static void setUseMetronome(boolean use) {
+    public void setUseMetronome(boolean use) {
         useMetronome = use;
     }
 
-    private static void updateStateOnCurrentPlayerChange() {
+    private void updateStateOnCurrentPlayerChange() {
         if (currentPlayer.isInitialized()) {
             if (currentPlayer.isPlaying())
                 CURRENT_STATE = STATE_PLAYING;
@@ -116,27 +127,34 @@ public final class SoundMixer {
     }
 
 
-    public static void setCurrentPitch(float pitch) {
+    public void setCurrentPitch(float pitch) {
         currentPlayer.setPitch(pitch);
     }
 
-    public static void setCurrentSpeed(float speed) {
+    public void setCurrentSpeed(float speed) {
         currentPlayer.setSpeed(speed);
     }
 
-    public static void setBpm(String bpm) {
+    public void setBpm(String bpm) {
         if (bpm.equals("Free")) {
             currentBpmDuration = -1;
         } else
             currentBpmDuration = (int) (1 / (((float) Integer.valueOf(bpm)) / 60) * 4000);
     }
 
-    public static void setCurrentBars(int currentBars) {
-        SoundMixer.currentBars = currentBars;
+    public void setCurrentBars(int currentBars) {
+        this.currentBars = currentBars;
     }
 
-    public static void tryPlayMetronome() {
-        if (useMetronome) {
+    public void tryPlayMetronome() {
+        if (useMetronome && currentBpmDuration > 0) {
+            CURRENT_STATE = STATE_METRONOME_PLAYING;
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    buttonListener.stateChanged(STATE_METRONOME_PLAYING);
+                }
+            });
             ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 50);
             try {
                 for (int i = 0; i < 3; i++) {
@@ -144,10 +162,44 @@ public final class SoundMixer {
                     Thread.sleep((currentBpmDuration / 4));
                 }
                 toneG.startTone(ToneGenerator.TONE_DTMF_1, 200);
+                if (currentBpmDuration > 200)
                 Thread.sleep((currentBpmDuration / 4) - 50); //!!! fix when i can think again
+                else
+                    Thread.sleep((currentBpmDuration / 4));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    private Runnable RecordingThread = new Runnable() {
+        @Override
+        public void run() {
+            if (audioRecorder.toggleRecord(currentBpmDuration * currentBars, currentPlayer.getReadPath())) {
+                CURRENT_STATE = STATE_RECORDING;
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        buttonListener.stateChanged(CURRENT_STATE);
+                    }
+                });
+            //    setEnableTrackTabs(false);
+            } else {
+              //  setEnableTrackTabs(true);
+                CURRENT_STATE = STATE_IDLE;
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        buttonListener.stateChanged(CURRENT_STATE);
+                    }
+                });
+            }
+        }
+    };
+
+    @Override
+    public void stateChanged(int state) {
+CURRENT_STATE = state;
+buttonListener.stateChanged(state);
     }
 }

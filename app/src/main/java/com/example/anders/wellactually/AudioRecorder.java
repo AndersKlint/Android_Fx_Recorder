@@ -10,12 +10,19 @@ import java.io.IOException;
  */
 
 public class AudioRecorder {
-    MediaRecorder recorder;
+    private MediaRecorder recorder;
     private boolean isRecording;
+    private SoundMixer soundMixer;
+    private OnStateChangedListener listener;
 
-    public AudioRecorder( ) {
+    public AudioRecorder(SoundMixer soundMixer ) {
+        this.soundMixer = soundMixer;
         isRecording = false;
         recorder = new MediaRecorder();
+    }
+
+    public void setCustomStateChangedListener(OnStateChangedListener listener) {
+        this.listener = listener;
     }
 
     public boolean toggleRecord(int duration, String recordingPath) {
@@ -27,6 +34,9 @@ public class AudioRecorder {
             stopRecording();
             return false;
         }
+    }
+    public boolean isRecording(){
+        return isRecording;
     }
 
     private void startRecording(int duration, String recordingPath) {
@@ -42,7 +52,7 @@ public class AudioRecorder {
             }
             recorder.prepare();
             isRecording = true;
-            SoundMixer.tryPlayMetronome();
+            soundMixer.tryPlayMetronome();
             recorder.start();
         } catch (IOException e) {
             Log.e("Audio recording:", "prepare() failed");
@@ -61,7 +71,7 @@ public class AudioRecorder {
         @Override
         public void onInfo(MediaRecorder mr, int what, int extra) {
             if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED)
-                SoundMixer.toggleRecord(); // Is this bad? Probably. Does it work? Yes.
+                soundMixer.toggleRecord(); // Is this bad? Probably. Does it work? Yes.
         }
     };
 
