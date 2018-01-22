@@ -4,8 +4,6 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Handler;
-import android.support.design.widget.TabLayout;
-import android.widget.LinearLayout;
 
 import java.util.LinkedList;
 
@@ -13,7 +11,7 @@ import java.util.LinkedList;
  * Created by Anders on 18/01/2018.
  */
 
-public final class SoundMixer implements OnStateChangedListener {
+public final class SoundMixer  {
     private LinkedList<AudioPlayer> audioPlayers = new LinkedList<AudioPlayer>();
     private AudioPlayer currentPlayer;
     private AudioRecorder audioRecorder;
@@ -22,10 +20,9 @@ public final class SoundMixer implements OnStateChangedListener {
     private int currentBpmDuration;
     private int currentBars;
     private AudioProgressBar audioProgressBar;
-    private TabLayout tabLayout;
     private boolean useMetronome = false;
     private Thread recordingThread;
-    private OnStateChangedListener buttonListener;
+    private OnStateChangedListener stateChangedListener;
     private Handler handler;
 
     public int CURRENT_STATE;
@@ -36,21 +33,19 @@ public final class SoundMixer implements OnStateChangedListener {
     public static final int STATE_METRONOME_PLAYING = 104;
 
 
-    public void init(Context context, String path, int defaultNbrOfTracks, AudioProgressBar progressBar, TabLayout trackTabs) {
+    public void init(Context context, String path, int defaultNbrOfTracks, AudioProgressBar progressBar) {
         this.handler = new Handler();
-        tabLayout = trackTabs;
         soundPath = path;
         audioProgressBar = progressBar;
         currentBars = 1;
         CURRENT_STATE = STATE_NO_PLAYBACK_FILE;
         audioRecorder = new AudioRecorder(this);
-        audioRecorder.setCustomStateChangedListener(this);
         for (int i = 0; i < defaultNbrOfTracks; i++)
             addTrack(context);
     }
 
     public void setCustomStateChangedListener(OnStateChangedListener listener) {
-        buttonListener = listener;
+        stateChangedListener = listener;
     }
 
     public void addTrack(Context context) {
@@ -67,7 +62,7 @@ public final class SoundMixer implements OnStateChangedListener {
         }
         audioProgressBar.setPlayer(currentPlayer);
         updateStateOnCurrentPlayerChange();
-        buttonListener.stateChanged(CURRENT_STATE);
+        stateChangedListener.stateChanged(CURRENT_STATE);
     }
 
 
@@ -79,36 +74,23 @@ public final class SoundMixer implements OnStateChangedListener {
             CURRENT_STATE = STATE_PLAYING;
         } else {
             audioProgressBar.setEnable(false);
+            audioProgressBar.resetPosition();
             CURRENT_STATE = STATE_IDLE;
         }
-        buttonListener.stateChanged(CURRENT_STATE);
+        stateChangedListener.stateChanged(CURRENT_STATE);
     }
 
     public void toggleRecord() {
-        if(!audioRecorder.isRecording()) {
+        if (!audioRecorder.isRecording()) {
+            if(currentPlayer.isPlaying())
+                togglePlay();
             currentPlayer.release();
             recordingThread = new Thread(RecordingThread);
             recordingThread.start();
-            buttonListener.stateChanged(CURRENT_STATE);
-        }
-        else {
-            recordingThread.run();
-            buttonListener.stateChanged(CURRENT_STATE);
-        }
-    }
-
-    private void setEnableTrackTabs(boolean b) {
-        LinearLayout tabStrip = ((LinearLayout) tabLayout.getChildAt(0));
-        if (b) {
-            tabStrip.setEnabled(true);
-            for (int i = 0; i < tabStrip.getChildCount(); i++) {
-                tabStrip.getChildAt(i).setClickable(true);
-            }
+            stateChangedListener.stateChanged(CURRENT_STATE);
         } else {
-            tabStrip.setEnabled(false);
-            for (int i = 0; i < tabStrip.getChildCount(); i++) {
-                tabStrip.getChildAt(i).setClickable(false);
-            }
+            recordingThread.run();
+            stateChangedListener.stateChanged(CURRENT_STATE);
         }
     }
 
@@ -135,6 +117,10 @@ public final class SoundMixer implements OnStateChangedListener {
         currentPlayer.setSpeed(speed);
     }
 
+    public void setCurrentPlaybackParams(float pitch, float speed) {
+        currentPlayer.setPlaybackParams(pitch,speed);
+    }
+
     public void setBpm(String bpm) {
         if (bpm.equals("Free")) {
             currentBpmDuration = -1;
@@ -152,7 +138,7 @@ public final class SoundMixer implements OnStateChangedListener {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    buttonListener.stateChanged(STATE_METRONOME_PLAYING);
+                    stateChangedListener.stateChanged(STATE_METRONOME_PLAYING);
                 }
             });
             ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 50);
@@ -163,7 +149,7 @@ public final class SoundMixer implements OnStateChangedListener {
                 }
                 toneG.startTone(ToneGenerator.TONE_DTMF_1, 200);
                 if (currentBpmDuration > 200)
-                Thread.sleep((currentBpmDuration / 4) - 50); //!!! fix when i can think again
+                    Thread.sleep((currentBpmDuration / 4) - 50); //!!! fix when i can think again
                 else
                     Thread.sleep((currentBpmDuration / 4));
             } catch (InterruptedException e) {
@@ -180,26 +166,18 @@ public final class SoundMixer implements OnStateChangedListener {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        buttonListener.stateChanged(CURRENT_STATE);
+                        stateChangedListener.stateChanged(CURRENT_STATE);
                     }
                 });
-            //    setEnableTrackTabs(false);
             } else {
-              //  setEnableTrackTabs(true);
                 CURRENT_STATE = STATE_IDLE;
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        buttonListener.stateChanged(CURRENT_STATE);
+                        stateChangedListener.stateChanged(CURRENT_STATE);
                     }
                 });
             }
         }
     };
-
-    @Override
-    public void stateChanged(int state) {
-CURRENT_STATE = state;
-buttonListener.stateChanged(state);
-    }
 }

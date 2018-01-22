@@ -60,6 +60,10 @@ public class AudioPlayer {
         isInitialized = false;
     }
 
+    public void setPlaybackParams(float pitch, float speed) {
+        player.setPlaybackParameters(new PlaybackParameters(speed, pitch));
+    }
+
 
     public void setPitch(float pitch) {
         float oldSpeed = player.getPlaybackParameters().speed;

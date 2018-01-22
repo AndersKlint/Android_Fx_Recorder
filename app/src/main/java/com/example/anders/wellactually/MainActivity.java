@@ -72,10 +72,10 @@ public class MainActivity extends AppCompatActivity {
         Button playButton = findViewById(R.id.button2);
         playButton.setEnabled(false);
         Button recordButton = findViewById(R.id.button_record);
-        PlaybackButtons playbackButtons = new PlaybackButtons(playButton, recordButton);
         trackTabs = findViewById(R.id.trackTabs);
         trackTabs.addOnTabSelectedListener(customTabListener);
         trackTabs.setClickable(false);
+        ViewStateHandler viewStateHandler = new ViewStateHandler(playButton, recordButton, trackTabs);
 
         bpmSpinner = findViewById(R.id.bpmSpinner);
 // Create an ArrayAdapter using the string array and a default spinner layout
@@ -91,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
         recordingPath = getExternalCacheDir().getAbsolutePath();  // order important, has to be done after permission
         AudioProgressBar audioProgressBar = new AudioProgressBar((ProgressBar) findViewById(R.id.progressBar));
         soundMixer = new SoundMixer();
-        soundMixer.setCustomStateChangedListener(playbackButtons);
-        soundMixer.init(this, recordingPath, 4, audioProgressBar, trackTabs);
+        soundMixer.setCustomStateChangedListener(viewStateHandler);
+        soundMixer.init(this, recordingPath, 4, audioProgressBar);
         soundMixer.setCurrentTrack(0);
         xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker), findViewById(R.id.xyPad), soundMixer);
 
@@ -291,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
 
                 private void createNewTab(TabLayout.Tab tab) {
                     trackTabs.addTab(trackTabs.newTab().setText("Ch" + " " + (tab.getPosition() + 1)), trackTabs.getTabCount() - 1);
-                    soundMixer.addTrack(getBaseContext()); // context=???? will this work?=??
+                    soundMixer.addTrack(getBaseContext()); // context might be wrong?
                     soundMixer.setCurrentTrack(tab.getPosition() - 1);
                 }
             };

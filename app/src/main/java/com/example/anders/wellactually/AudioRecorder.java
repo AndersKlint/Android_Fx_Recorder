@@ -13,16 +13,11 @@ public class AudioRecorder {
     private MediaRecorder recorder;
     private boolean isRecording;
     private SoundMixer soundMixer;
-    private OnStateChangedListener listener;
 
     public AudioRecorder(SoundMixer soundMixer ) {
         this.soundMixer = soundMixer;
         isRecording = false;
         recorder = new MediaRecorder();
-    }
-
-    public void setCustomStateChangedListener(OnStateChangedListener listener) {
-        this.listener = listener;
     }
 
     public boolean toggleRecord(int duration, String recordingPath) {

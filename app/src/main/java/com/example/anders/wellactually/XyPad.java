@@ -36,8 +36,7 @@ public class XyPad {
                 float yScale = y / ((float) v.getHeight());
                 xySeeker.setX(x - seekerHalfWidth);  // to fix origin to center
                 xySeeker.setY(y - seekerHalfHeight);
-                soundMixer.setCurrentSpeed(xScale * 2);
-                soundMixer.setCurrentPitch((1 - yScale) * 2);
+                soundMixer.setCurrentPlaybackParams((1 - yScale) * 2,xScale * 2);
                 return true;
             }
         });
