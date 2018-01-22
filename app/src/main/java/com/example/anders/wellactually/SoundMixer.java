@@ -173,7 +173,7 @@ public final class SoundMixer {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        updateState(STATE_READY_TO_PLAY);
+                        togglePlay();
                     }
                 });
             }
