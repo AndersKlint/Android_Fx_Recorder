@@ -15,6 +15,7 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.upstream.AssetDataSource;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
@@ -26,13 +27,12 @@ import com.google.android.exoplayer2.util.Util;
 public class AudioPlayer {
 
     private Context context;
-    private String filePath;
     private SimpleExoPlayer player;
     private boolean isInitialized;
+    private Uri filePath;
 
-    public AudioPlayer(Context context, String filePath ) {
+    public AudioPlayer(Context context) {
         this.context = context;
-        this.filePath = filePath;
         isInitialized = false;
 
         player =
@@ -42,14 +42,15 @@ public class AudioPlayer {
                 Util.getUserAgent(context, "Well Actually"), null);
     }
 
-    public void init(){
+    public void init(Uri filePath){
+        this.filePath = filePath;
         player =
                 ExoPlayerFactory.newSimpleInstance(
                         context, new DefaultTrackSelector());
         DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
                 Util.getUserAgent(context, "Well Actually"), null);
-        MediaSource  mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(Uri.parse(filePath));
+            MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(filePath);
         player.setRepeatMode(Player.REPEAT_MODE_ALL);
         player.prepare(mediaSource);
         isInitialized = true;
@@ -76,8 +77,6 @@ public class AudioPlayer {
     }
 
     public boolean togglePlay() {
-        if(player == null)
-            init();
         if (!player.getPlayWhenReady()) {
             player.setPlayWhenReady(true);
             return true;
@@ -103,7 +102,7 @@ public class AudioPlayer {
         return isInitialized;
     }
 
-    public String getReadPath() {
+    public Uri getUri() {
         return filePath;
     }
 }

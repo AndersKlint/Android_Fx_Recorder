@@ -1,8 +1,6 @@
 package com.example.anders.wellactually;
 
-import android.content.Context;
 import android.support.design.widget.TabLayout;
-import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
@@ -25,7 +23,7 @@ class ViewStateHandler implements OnStateChangedListener {
 
     private void updateState(int soundMixerState) {
         switch (soundMixerState) {
-            case (SoundMixer.STATE_IDLE):
+            case (SoundMixer.STATE_READY_TO_PLAY):
                 setEnableTrackTabs(true);
                 play.setText("Play");
                 play.setEnabled(true);

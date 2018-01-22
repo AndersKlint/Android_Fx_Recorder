@@ -3,6 +3,7 @@ package com.example.anders.wellactually;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.net.Uri;
 import android.os.Handler;
 
 import java.util.LinkedList;
@@ -11,12 +12,12 @@ import java.util.LinkedList;
  * Created by Anders on 18/01/2018.
  */
 
-public final class SoundMixer  {
+public final class SoundMixer {
     private LinkedList<AudioPlayer> audioPlayers = new LinkedList<AudioPlayer>();
     private AudioPlayer currentPlayer;
     private AudioRecorder audioRecorder;
-    private String soundPath;
-    private int nbrOfTracks;
+    private String recordingPath;
+    private int currentTrack;
     private int currentBpmDuration;
     private int currentBars;
     private AudioProgressBar audioProgressBar;
@@ -24,10 +25,11 @@ public final class SoundMixer  {
     private Thread recordingThread;
     private OnStateChangedListener stateChangedListener;
     private Handler handler;
+    private Uri currentUri;
 
     public int CURRENT_STATE;
     public static final int STATE_PLAYING = 100;
-    public static final int STATE_IDLE = 101;
+    public static final int STATE_READY_TO_PLAY = 101;
     public static final int STATE_NO_PLAYBACK_FILE = 102;
     public static final int STATE_RECORDING = 103;
     public static final int STATE_METRONOME_PLAYING = 104;
@@ -35,10 +37,10 @@ public final class SoundMixer  {
 
     public void init(Context context, String path, int defaultNbrOfTracks, AudioProgressBar progressBar) {
         this.handler = new Handler();
-        soundPath = path;
+        recordingPath = path;
         audioProgressBar = progressBar;
         currentBars = 1;
-        CURRENT_STATE = STATE_NO_PLAYBACK_FILE;
+        updateState(STATE_NO_PLAYBACK_FILE);
         audioRecorder = new AudioRecorder(this);
         for (int i = 0; i < defaultNbrOfTracks; i++)
             addTrack(context);
@@ -49,11 +51,14 @@ public final class SoundMixer  {
     }
 
     public void addTrack(Context context) {
-        audioPlayers.add(new AudioPlayer(context, soundPath + "/mock_recording" + ++nbrOfTracks + ".3gp"));
+        audioPlayers.add(new AudioPlayer(context));
     }
 
     public void setCurrentTrack(int index) {
+        currentTrack = index +1;
         currentPlayer = audioPlayers.get(index);
+        if (currentPlayer.isInitialized())
+            currentUri = currentPlayer.getUri();
         if (currentPlayer.isPlaying())
             audioProgressBar.setEnable(true);
         else {
@@ -62,35 +67,32 @@ public final class SoundMixer  {
         }
         audioProgressBar.setPlayer(currentPlayer);
         updateStateOnCurrentPlayerChange();
-        stateChangedListener.stateChanged(CURRENT_STATE);
     }
 
 
     public void togglePlay() {
         if (!currentPlayer.isInitialized())
-            currentPlayer.init();
+            currentPlayer.init(currentUri);
         if (currentPlayer.togglePlay()) {
             audioProgressBar.setEnable(true);
-            CURRENT_STATE = STATE_PLAYING;
+            updateState(STATE_PLAYING);
         } else {
             audioProgressBar.setEnable(false);
             audioProgressBar.resetPosition();
-            CURRENT_STATE = STATE_IDLE;
+            updateState(STATE_READY_TO_PLAY);
         }
-        stateChangedListener.stateChanged(CURRENT_STATE);
     }
 
     public void toggleRecord() {
         if (!audioRecorder.isRecording()) {
-            if(currentPlayer.isPlaying())
+            currentUri = Uri.parse(recordingPath + "/mock_recording_" + currentTrack + ".3gp");  //dont wanna overwrite loaded file
+            if (currentPlayer.isPlaying())
                 togglePlay();
             currentPlayer.release();
             recordingThread = new Thread(RecordingThread);
             recordingThread.start();
-            stateChangedListener.stateChanged(CURRENT_STATE);
         } else {
             recordingThread.run();
-            stateChangedListener.stateChanged(CURRENT_STATE);
         }
     }
 
@@ -101,11 +103,11 @@ public final class SoundMixer  {
     private void updateStateOnCurrentPlayerChange() {
         if (currentPlayer.isInitialized()) {
             if (currentPlayer.isPlaying())
-                CURRENT_STATE = STATE_PLAYING;
+                updateState(STATE_PLAYING);
             else
-                CURRENT_STATE = STATE_IDLE;
+                updateState(STATE_READY_TO_PLAY);
         } else
-            CURRENT_STATE = STATE_NO_PLAYBACK_FILE;
+            updateState(STATE_NO_PLAYBACK_FILE);
     }
 
 
@@ -118,7 +120,7 @@ public final class SoundMixer  {
     }
 
     public void setCurrentPlaybackParams(float pitch, float speed) {
-        currentPlayer.setPlaybackParams(pitch,speed);
+        currentPlayer.setPlaybackParams(pitch, speed);
     }
 
     public void setBpm(String bpm) {
@@ -134,11 +136,10 @@ public final class SoundMixer  {
 
     public void tryPlayMetronome() {
         if (useMetronome && currentBpmDuration > 0) {
-            CURRENT_STATE = STATE_METRONOME_PLAYING;
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    stateChangedListener.stateChanged(STATE_METRONOME_PLAYING);
+                    updateState(STATE_METRONOME_PLAYING);
                 }
             });
             ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 50);
@@ -161,23 +162,32 @@ public final class SoundMixer  {
     private Runnable RecordingThread = new Runnable() {
         @Override
         public void run() {
-            if (audioRecorder.toggleRecord(currentBpmDuration * currentBars, currentPlayer.getReadPath())) {
-                CURRENT_STATE = STATE_RECORDING;
+            if (audioRecorder.toggleRecord(currentBpmDuration * currentBars, currentUri.toString())) {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        stateChangedListener.stateChanged(CURRENT_STATE);
+                        updateState(STATE_RECORDING);
                     }
                 });
             } else {
-                CURRENT_STATE = STATE_IDLE;
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        stateChangedListener.stateChanged(CURRENT_STATE);
+                        updateState(STATE_READY_TO_PLAY);
                     }
                 });
             }
         }
     };
+
+    public void setFile(Uri file) {
+        currentUri = file;
+        currentPlayer.release();
+        updateState(STATE_READY_TO_PLAY);
+    }
+
+    private void updateState(int newState) {
+        CURRENT_STATE = newState;
+        stateChangedListener.stateChanged(newState);
+    }
 }

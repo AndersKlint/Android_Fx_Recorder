@@ -1,8 +1,12 @@
 package com.example.anders.wellactually;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
@@ -12,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,6 +32,8 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TabHost;
 
+import com.google.android.exoplayer2.upstream.RawResourceDataSource;
+
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private String recordingPath;
@@ -41,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner bpmSpinner;
     private ArrayAdapter<CharSequence> spinnerAdapter;
     private SoundMixer soundMixer;
+    private static final int READ_REQUEST_CODE = 200;
 
     public static ProgressBar progressBar;
 
@@ -173,6 +181,79 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void onLoad(View view) {
+        LayoutInflater li = LayoutInflater.from(getBaseContext());
+        View promptsView = li.inflate(R.layout.load_chooser, null);
+         AlertDialog.Builder adb = new AlertDialog.Builder(this);
+        adb.setView(promptsView);
+        adb.setTitle("Load from:");
+        adb.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        final AlertDialog dialog = adb.create();
+        //adb.setIcon(android.R.drawable.ic_dialog_alert);
+        Button samples = (Button) promptsView.findViewById(R.id.load_samples_button);
+
+        Button files = (Button) promptsView.findViewById(R.id.load_files_button2);
+
+        samples.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                dialog.dismiss();
+                soundMixer.setFile(Uri.parse("file:///android_asset/drumbeat_100bpm_2bars_4by4.mp3"));
+
+            }
+        });
+
+        files.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                dialog.dismiss();
+                // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file
+                // browser.
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+
+                // Filter to only show results that can be "opened", such as a
+                // file (as opposed to a list of contacts or timezones)
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+
+                // Filter to show only images, using the image MIME data type.
+                // If one wanted to search for ogg vorbis files, the type would be "audio/ogg".
+                // To search for all documents available via installed storage providers,
+                // it would be "*/*".
+                intent.setType("audio/*");
+
+
+                startActivityForResult(intent, READ_REQUEST_CODE);
+            }
+        });
+        dialog.show();
+
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode,
+                                 Intent resultData) {
+
+        // The ACTION_OPEN_DOCUMENT intent was sent with the request code
+        // READ_REQUEST_CODE. If the request code seen here doesn't match, it's the
+        // response to some other intent, and the code below shouldn't run at all.
+
+        if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            // The document selected by the user won't be returned in the intent.
+            // Instead, a URI to that document will be contained in the return intent
+            // provided to this method as a parameter.
+            // Pull that URI using resultData.getData().
+            Uri uri = null;
+            if (resultData != null) {
+                uri = resultData.getData();
+                Log.i("Load Path", "Uri: " + uri.toString());
+                soundMixer.setFile(uri);
+            }
+        }
+    }
+
     private void showBpmDialog() {
         LayoutInflater li = LayoutInflater.from(getBaseContext());
         View promptsView = li.inflate(R.layout.alert_dialog, null);
@@ -187,13 +268,13 @@ public class MainActivity extends AppCompatActivity {
                 String inputText = userInput.getText().toString();
                 if (Integer.valueOf(inputText) < 10)
                     inputText = "10";
-                else if(Integer.valueOf(inputText) > 500)
+                else if (Integer.valueOf(inputText) > 500)
                     inputText = "500";
                 soundMixer.setBpm(inputText);
-         //       spinnerAdapter.add(inputText);
-       //         spinnerAdapter.notifyDataSetChanged();
-            //    Spinner temp = findViewById(R.id.bpmSpinner);
-           //     temp.setSelection(spinnerAdapter.getCount()-1);
+                //       spinnerAdapter.add(inputText);
+                //         spinnerAdapter.notifyDataSetChanged();
+                //    Spinner temp = findViewById(R.id.bpmSpinner);
+                //     temp.setSelection(spinnerAdapter.getCount()-1);
             }
         });
 
@@ -213,8 +294,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                     if (parent.getItemAtPosition(position).toString().equals("Custom")) {
                         showBpmDialog();
-                    }
-                    else
+                    } else
                         soundMixer.setBpm((String) parent.getItemAtPosition(position));
                 }
 
@@ -267,8 +347,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onTabSelected(TabLayout.Tab tab) {
                     if (soundMixer.CURRENT_STATE == SoundMixer.STATE_RECORDING) {
 
-                    }
-                    else {
+                    } else {
 
                         if (tab.getPosition() == trackTabs.getTabCount() - 1) // last tab is add new tab button
                             createNewTab(tab);
