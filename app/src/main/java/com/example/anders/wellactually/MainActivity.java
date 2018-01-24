@@ -13,6 +13,8 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -48,6 +50,10 @@ public class MainActivity extends AppCompatActivity {
     private Spinner bpmSpinner;
     private ArrayAdapter<CharSequence> spinnerAdapter;
     private SoundMixer soundMixer;
+    private RecyclerView recordingsRecyclerView;
+    private RecyclerView.Adapter recordingsAdapter;
+    private RecyclerView.LayoutManager recordingsLayoutManager;
+
     private static final int READ_REQUEST_CODE = 200;
 
     public static ProgressBar progressBar;
@@ -103,8 +109,23 @@ public class MainActivity extends AppCompatActivity {
         soundMixer.init(this, recordingPath, 4, audioProgressBar);
         soundMixer.setCurrentTrack(0);
         xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker), findViewById(R.id.xyPad), soundMixer);
-
         EditText barsText = findViewById(R.id.barsText);
+
+        recordingsRecyclerView = (RecyclerView) findViewById(R.id.recordings_recyclerview);
+
+        // use this setting to improve performance if you know that changes
+        // in content do not change the layout size of the RecyclerView
+        recordingsRecyclerView.setHasFixedSize(true);
+
+        // use a linear layout manager
+        recordingsLayoutManager = new LinearLayoutManager(this);
+        recordingsRecyclerView.setLayoutManager(recordingsLayoutManager);
+
+        // specify an adapter (see also next example)
+        String[] recodringsDataset = {"hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello",};
+        recordingsAdapter = new RecordingsViewAdapter(recodringsDataset);
+        recordingsRecyclerView.setAdapter(recordingsAdapter);
+
         barsText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -152,14 +173,20 @@ public class MainActivity extends AppCompatActivity {
     private void initTabs() {
         //Tab 1
         TabHost.TabSpec spec = tabHost.newTabSpec("Sliders");
-        spec.setContent(R.id.tab1);
+        spec.setContent(R.id.tab_sliders);
         spec.setIndicator("Sliders");
         tabHost.addTab(spec);
 
         //Tab 2
         spec = tabHost.newTabSpec("XY-Pad");
-        spec.setContent(R.id.tab2);
+        spec.setContent(R.id.tab_xy);
         spec.setIndicator("XY-Pad");
+        tabHost.addTab(spec);
+
+        //Tab 3
+        spec = tabHost.newTabSpec("Files");
+        spec.setContent(R.id.tab_files);
+        spec.setIndicator("Files");
         tabHost.addTab(spec);
     }
 

@@ -235,7 +235,19 @@
                         android:layout_height="313dp">
 
                         <android.support.constraint.ConstraintLayout
-                            android:id="@+id/tab2"
+                            android:id="@+id/tab_files"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical">
+
+                            <android.support.v7.widget.RecyclerView
+                                android:id="@+id/recordings_recyclerview"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+                        </android.support.constraint.ConstraintLayout>
+
+                        <android.support.constraint.ConstraintLayout
+                            android:id="@+id/tab_xy"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent">
 
@@ -319,7 +331,7 @@
                         </android.support.constraint.ConstraintLayout>
 
                         <android.support.constraint.ConstraintLayout
-                            android:id="@+id/tab1"
+                            android:id="@+id/tab_sliders"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:orientation="vertical">
