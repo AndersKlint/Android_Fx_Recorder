@@ -5,8 +5,10 @@ import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
@@ -36,6 +38,8 @@ import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -57,11 +61,9 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recordingsRecyclerView;
     private RecyclerView.Adapter recordingsAdapter;
     private RecyclerView.LayoutManager recordingsLayoutManager;
-    private ArrayList<RecordingListItem> recodringsDataset;
-
+    private ArrayList<RecordingListItem> recordingDataset;
+    private File saveDirectory = Environment.getExternalStoragePublicDirectory("/"+ "Recordings_MultiTrack");
     private static final int READ_REQUEST_CODE = 200;
-
-    public static ProgressBar progressBar;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -111,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         AudioProgressBar audioProgressBar = new AudioProgressBar((ProgressBar) findViewById(R.id.progressBar));
         soundMixer = new SoundMixer();
         soundMixer.setCustomStateChangedListener(viewStateHandler);
-        soundMixer.init(this, recordingPath, 4, audioProgressBar);
+        soundMixer.init(this, recordingPath, 4, audioProgressBar, saveDirectory);
         soundMixer.setCurrentTrack(0);
         xyPad = new XyPad((ImageView) findViewById(R.id.xyPadSeeker), findViewById(R.id.xyPad), soundMixer);
         EditText barsText = findViewById(R.id.barsText);
@@ -127,9 +129,10 @@ public class MainActivity extends AppCompatActivity {
         recordingsRecyclerView.setLayoutManager(recordingsLayoutManager);
 
         // specify an adapter (see also next example)
-        recodringsDataset = new ArrayList<RecordingListItem>(30);
-        recordingsAdapter = new RecordingsViewAdapter(recodringsDataset);
+        recordingDataset = new ArrayList<RecordingListItem>(30);
+        recordingsAdapter = new RecordingsViewAdapter(recordingDataset);
         recordingsRecyclerView.setAdapter(recordingsAdapter);
+        readToRecodringDataset();
         barsText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -149,6 +152,22 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    private void readToRecodringDataset() {
+        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+        int index = 0;
+        for (File file : saveDirectory.listFiles()) {
+            mmr.setDataSource(getApplicationContext(), Uri.fromFile(file));
+            String nameStr = file.getName();
+            String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            if (durationStr != null && nameStr != null) {
+                int millSecond = Integer.parseInt(durationStr);
+                RecordingListItem newItem = new RecordingListItem(nameStr, file.getPath(), millSecond);
+                recordingDataset.add(index++, newItem);
+            }
+        }
+        recordingsAdapter.notifyDataSetChanged();
     }
 
 
@@ -198,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
         CardView cv = (CardView) view;
         cv.animate();
         String itemName = ((TextView) cv.findViewById(R.id.cardview_text)).getText().toString();
-        String path = recodringsDataset.get(recodringsDataset.indexOf(new RecordingListItem(itemName,"",0))).getSavePath();
+        String path = recordingDataset.get(recordingDataset.indexOf(new RecordingListItem(itemName,"",0))).getSavePath();
         soundMixer.setFile(Uri.parse(path));
         Toast.makeText(this,itemName + " loaded.",Toast.LENGTH_SHORT).show();
     }
@@ -234,14 +253,15 @@ public class MainActivity extends AppCompatActivity {
         final EditText userInput =  promptsView
                 .findViewById(R.id.save_dialog_text);
         Calendar c = Calendar.getInstance();
-        SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy");
+        SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+        df.toLocalizedPattern();
         String formattedDate = df.format(c.getTime());
         userInput.setText(formattedDate + "_");
         //adb.setIcon(android.R.drawable.ic_dialog_alert);
         adb.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
-                if(soundMixer.saveCurrent(userInput.getText().toString(), recodringsDataset))
-                    recordingsAdapter.notifyItemInserted(recodringsDataset.size() - 1);
+                if(soundMixer.saveCurrent(userInput.getText().toString(), recordingDataset))
+                    recordingsAdapter.notifyItemInserted(recordingDataset.size() - 1);
             }
         });
 

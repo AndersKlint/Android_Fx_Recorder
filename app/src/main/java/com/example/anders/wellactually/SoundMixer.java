@@ -45,11 +45,12 @@ public final class SoundMixer {
     public static final int STATE_METRONOME_PLAYING = 104;
 
 
-    public void init(Context context, String path, int defaultNbrOfTracks, AudioProgressBar progressBar) {
+    public void init(Context context, String path, int defaultNbrOfTracks, AudioProgressBar progressBar, File saveDirectory) {
         this.handler = new Handler();
         recordingPath = path;
-        saveDirectory = Environment.getExternalStoragePublicDirectory("/"+ "Recordings_MultiTrack");
-        saveDirectory.mkdir();
+        this.saveDirectory = saveDirectory;
+        if (!saveDirectory.exists())
+            this.saveDirectory.mkdir();
         audioProgressBar = progressBar;
         currentBars = 1;
         updateState(STATE_NO_PLAYBACK_FILE);
