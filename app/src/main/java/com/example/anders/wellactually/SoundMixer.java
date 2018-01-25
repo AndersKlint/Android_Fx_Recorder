@@ -4,8 +4,17 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
@@ -26,6 +35,7 @@ public final class SoundMixer {
     private OnStateChangedListener stateChangedListener;
     private Handler handler;
     private Uri currentUri;
+    private File saveDirectory;
 
     public int CURRENT_STATE;
     public static final int STATE_PLAYING = 100;
@@ -38,6 +48,8 @@ public final class SoundMixer {
     public void init(Context context, String path, int defaultNbrOfTracks, AudioProgressBar progressBar) {
         this.handler = new Handler();
         recordingPath = path;
+        saveDirectory = Environment.getExternalStoragePublicDirectory("/"+ "Recordings_MultiTrack");
+        saveDirectory.mkdir();
         audioProgressBar = progressBar;
         currentBars = 1;
         updateState(STATE_NO_PLAYBACK_FILE);
@@ -189,5 +201,38 @@ public final class SoundMixer {
     private void updateState(int newState) {
         CURRENT_STATE = newState;
         stateChangedListener.stateChanged(newState);
+    }
+
+    public boolean saveCurrent(String name, ArrayList<RecordingListItem> dataset) {
+        String newSavePath = saveDirectory.getPath() +"/" + name + ".m4a";
+        if (isExternalStorageWritable() && saveDirectory.getFreeSpace() > 5020) {
+                try (InputStream in = new FileInputStream(currentUri.toString())) {
+                    try (OutputStream out = new FileOutputStream(newSavePath)) {
+                        // Transfer bytes from in to out
+                        byte[] buf = new byte[1024];
+                        int len;
+                        while ((len = in.read(buf)) > 0)
+                            out.write(buf, 0, len);
+                }
+            } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    return false;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+                dataset.add(new RecordingListItem(name, newSavePath, currentPlayer.getDuration()));
+                return true;
+        }
+        return false;
+    }
+
+    /* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
     }
 }

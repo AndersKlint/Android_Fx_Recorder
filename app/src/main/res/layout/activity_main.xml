@@ -167,13 +167,13 @@
                     app:layout_constraintEnd_toEndOf="@+id/button2"
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintStart_toStartOf="@+id/button_record"
-                    app:layout_constraintTop_toBottomOf="@+id/button_load" />
+                    app:layout_constraintTop_toBottomOf="@+id/button_save" />
 
                 <Button
                     android:id="@+id/button_record"
                     style="@style/Widget.AppCompat.Button.Colored"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="49dp"
                     android:layout_marginStart="8dp"
                     android:onClick="onRecord"
                     android:text="Record"
@@ -181,14 +181,14 @@
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <Button
-                    android:id="@+id/button_load"
+                    android:id="@+id/button_save"
                     style="@style/Widget.AppCompat.Button.Colored"
                     android:layout_width="60dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:layout_marginStart="8dp"
-                    android:onClick="onLoad"
-                    android:text="Load"
+                    android:onClick="onSave"
+                    android:text="Save"
                     app:layout_constraintEnd_toStartOf="@+id/button2"
                     app:layout_constraintStart_toEndOf="@+id/button_record"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -211,13 +211,13 @@
                 android:id="@+id/tabHost"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="8dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/frameLayout2">
+                app:layout_constraintTop_toBottomOf="@+id/metronomeCheckBox">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -240,10 +240,49 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical">
 
-                            <android.support.v7.widget.RecyclerView
-                                android:id="@+id/recordings_recyclerview"
+                            <android.support.design.widget.CoordinatorLayout
                                 android:layout_width="match_parent"
-                                android:layout_height="match_parent" />
+                                android:layout_height="match_parent">
+
+                                <android.support.v7.widget.RecyclerView
+                                    android:id="@+id/recordings_recyclerview"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toBottomOf="@+id/button_load">
+
+                                </android.support.v7.widget.RecyclerView>
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="bottom|right"
+                                    android:layout_margin="32dp">
+
+                                    <android.support.design.widget.FloatingActionButton
+                                        android:id="@+id/button_load"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:clickable="true"
+                                        android:onClick="onLoad"
+                                        android:src="@android:color/transparent" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_gravity="center"
+                                        android:elevation="16dp"
+                                        android:text="LOAD"
+                                        android:textAppearance="?android:attr/textAppearanceMedium"
+                                        android:textColor="@android:color/white"
+                                        android:textSize="12sp"
+                                        tools:text="@string/button_actually" />
+                                </FrameLayout>
+
+                            </android.support.design.widget.CoordinatorLayout>
+
                         </android.support.constraint.ConstraintLayout>
 
                         <android.support.constraint.ConstraintLayout
@@ -426,13 +465,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:layout_marginEnd="8dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="16dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
                 android:onClick="metronomeCheckBoxOnClick"
                 android:text="Metronome"
                 app:layout_constraintBottom_toTopOf="@+id/tabHost"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/frameLayout2" />
 
         </android.support.constraint.ConstraintLayout>

@@ -2,7 +2,6 @@ package com.example.anders.wellactually;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,6 +12,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -33,8 +33,12 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TabHost;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import com.google.android.exoplayer2.upstream.RawResourceDataSource;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
@@ -53,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recordingsRecyclerView;
     private RecyclerView.Adapter recordingsAdapter;
     private RecyclerView.LayoutManager recordingsLayoutManager;
+    private ArrayList<RecordingListItem> recodringsDataset;
 
     private static final int READ_REQUEST_CODE = 200;
 
@@ -122,10 +127,9 @@ public class MainActivity extends AppCompatActivity {
         recordingsRecyclerView.setLayoutManager(recordingsLayoutManager);
 
         // specify an adapter (see also next example)
-        String[] recodringsDataset = {"hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello","hi","hello",};
+        recodringsDataset = new ArrayList<RecordingListItem>(30);
         recordingsAdapter = new RecordingsViewAdapter(recodringsDataset);
         recordingsRecyclerView.setAdapter(recordingsAdapter);
-
         barsText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -190,9 +194,19 @@ public class MainActivity extends AppCompatActivity {
         tabHost.addTab(spec);
     }
 
+    public void fileTabItemOnClick(View view) {
+        CardView cv = (CardView) view;
+        cv.animate();
+        String itemName = ((TextView) cv.findViewById(R.id.cardview_text)).getText().toString();
+        String path = recodringsDataset.get(recodringsDataset.indexOf(new RecordingListItem(itemName,"",0))).getSavePath();
+        soundMixer.setFile(Uri.parse(path));
+        Toast.makeText(this,itemName + " loaded.",Toast.LENGTH_SHORT).show();
+    }
+
     public void metronomeCheckBoxOnClick(View view) {
         soundMixer.setUseMetronome(((CheckBox) view).isChecked());
     }
+
 
     public void resetXyPad(View view) {
         xyPad.resetXyPad();
@@ -200,12 +214,45 @@ public class MainActivity extends AppCompatActivity {
 
     public void onPlay(View view) {
         soundMixer.togglePlay();
-
     }
 
     public void onRecord(View view) {
         soundMixer.toggleRecord();
+    }
 
+    public void onSave(View view){
+        showSetNameDialog();
+    }
+
+    private void showSetNameDialog() {
+        String name;
+        LayoutInflater li = LayoutInflater.from(getBaseContext());
+        View promptsView = li.inflate(R.layout.save_dialog, null);
+        AlertDialog.Builder adb = new AlertDialog.Builder(this);
+        adb.setView(promptsView);
+        adb.setTitle("Name:");
+        final EditText userInput =  promptsView
+                .findViewById(R.id.save_dialog_text);
+        Calendar c = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy");
+        String formattedDate = df.format(c.getTime());
+        userInput.setText(formattedDate + "_");
+        //adb.setIcon(android.R.drawable.ic_dialog_alert);
+        adb.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                if(soundMixer.saveCurrent(userInput.getText().toString(), recodringsDataset))
+                    recordingsAdapter.notifyItemInserted(recodringsDataset.size() - 1);
+            }
+        });
+
+
+        adb.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+
+                dialog.cancel();
+            }
+        });
+        adb.show();
     }
 
     public void onLoad(View view) {
