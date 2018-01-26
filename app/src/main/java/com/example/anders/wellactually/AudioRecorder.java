@@ -37,7 +37,7 @@ public class AudioRecorder {
     private void startRecording(int duration, String recordingPath) {
         recorder = new MediaRecorder();
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
         recorder.setOutputFile(recordingPath);
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
         try {

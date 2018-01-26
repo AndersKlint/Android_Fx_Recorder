@@ -46,7 +46,6 @@ public class XyPad {
     public void resetXyPad() {
         xySeeker.setX(((View) xySeeker.getParent()).getWidth() / 2 - xySeeker.getWidth() / 2);
         xySeeker.setY(((View) xySeeker.getParent()).getHeight() / 2 - xySeeker.getHeight() / 2);
-        soundMixer.setCurrentSpeed(1);
-        soundMixer.setCurrentPitch(1);
+        soundMixer.setCurrentPlaybackParams(1,1);
     }
 }

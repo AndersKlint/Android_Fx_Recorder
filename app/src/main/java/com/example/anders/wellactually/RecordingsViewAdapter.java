@@ -59,6 +59,7 @@ public class RecordingsViewAdapter extends RecyclerView.Adapter<RecordingsViewAd
 
     }
 
+
     // Return the size of your dataset (invoked by the layout manager)
     @Override
     public int getItemCount() {

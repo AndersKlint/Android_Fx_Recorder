@@ -11,12 +11,14 @@ import android.widget.LinearLayout;
 class ViewStateHandler implements OnStateChangedListener {
     private Button play;
     private Button record;
+    private Button save;
     private TabLayout tabLayout;
 
 
-    public ViewStateHandler(Button play, Button record, TabLayout tabLayout) {
+    public ViewStateHandler(Button play, Button record, Button save, TabLayout tabLayout) {
         this.play = play;
         this.record = record;
+        this.save = save;
         this.tabLayout = tabLayout;
     }
 
@@ -28,34 +30,40 @@ class ViewStateHandler implements OnStateChangedListener {
                 play.setText("Play");
                 play.setEnabled(true);
                 record.setText("Record");
+                save.setEnabled(true);
                 break;
             case (SoundMixer.STATE_NO_PLAYBACK_FILE):
                 setEnableTrackTabs(true);
                 play.setEnabled(false);
                 play.setText("Play");
                 record.setText("Record");
+                save.setEnabled(false);
                 break;
             case (SoundMixer.STATE_PLAYING):
                 setEnableTrackTabs(true);
                 play.setEnabled(true);
                 play.setText("Stop");
                 record.setText("Record");
+                save.setEnabled(true);
                 break;
             case (SoundMixer.STATE_RECORDING):
                 setEnableTrackTabs(false);
                 record.setEnabled(true);
                 play.setEnabled(false);
                 record.setText("Stop");
+                save.setEnabled(false);
                 break;
             case (SoundMixer.STATE_METRONOME_PLAYING):
                 setEnableTrackTabs(false);
                 record.setEnabled(false);
                 play.setEnabled(false);
                 record.setText("Stop");
+                save.setEnabled(false);
                 break;
             default:
                 play.setEnabled(false);
                 play.setText("Play");
+                save.setEnabled(false);
                 record.setText("Record");
                 break;
         }

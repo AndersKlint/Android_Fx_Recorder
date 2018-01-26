@@ -43,6 +43,7 @@ public final class SoundMixer {
     public static final int STATE_NO_PLAYBACK_FILE = 102;
     public static final int STATE_RECORDING = 103;
     public static final int STATE_METRONOME_PLAYING = 104;
+    private float currentBpm;
 
 
     public void init(Context context, String path, int defaultNbrOfTracks, AudioProgressBar progressBar, File saveDirectory) {
@@ -137,10 +138,13 @@ public final class SoundMixer {
     }
 
     public void setBpm(String bpm) {
-        if (bpm.equals("Free")) {
+        if (!bpm.matches("[0-9]+") || (bpm.length() == 0)) {
             currentBpmDuration = -1;
-        } else
+            currentBpm = -1;
+        } else {
+            currentBpm = Float.parseFloat(bpm);
             currentBpmDuration = (int) (1 / (((float) Integer.valueOf(bpm)) / 60) * 4000);
+        }
     }
 
     public void setCurrentBars(int currentBars) {
@@ -193,10 +197,18 @@ public final class SoundMixer {
         }
     };
 
-    public void setFile(Uri file) {
+    public void loadFile(Uri file) {
         currentUri = file;
         currentPlayer.release();
         updateState(STATE_READY_TO_PLAY);
+        currentPlayer.init(currentUri);
+    }
+
+    public void loadSampleFile(Uri file, float fileBpm) {
+        currentUri = file;
+        currentPlayer.release();
+        updateState(STATE_READY_TO_PLAY);
+        currentPlayer.initWithSample(currentUri, fileBpm, currentBpm);
     }
 
     private void updateState(int newState) {
@@ -205,7 +217,7 @@ public final class SoundMixer {
     }
 
     public boolean saveCurrent(String name, ArrayList<RecordingListItem> dataset) {
-        String newSavePath = saveDirectory.getPath() +"/" + name + ".m4a";
+        String newSavePath = saveDirectory.getPath() +"/" + name + ".3gp";
         if (isExternalStorageWritable() && saveDirectory.getFreeSpace() > 5020) {
                 try (InputStream in = new FileInputStream(currentUri.toString())) {
                     try (OutputStream out = new FileOutputStream(newSavePath)) {
@@ -222,7 +234,7 @@ public final class SoundMixer {
                     e.printStackTrace();
                     return false;
                 }
-                dataset.add(new RecordingListItem(name, newSavePath, currentPlayer.getDuration()));
+                dataset.add(0,new RecordingListItem(name, newSavePath, currentPlayer.getDuration()));
                 return true;
         }
         return false;
@@ -235,5 +247,9 @@ public final class SoundMixer {
             return true;
         }
         return false;
+    }
+
+    public void setCurrentVolume(float currentVolume) {
+         currentPlayer.setVolume(currentVolume);
     }
 }

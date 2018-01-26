@@ -30,6 +30,7 @@ public class AudioPlayer {
     private SimpleExoPlayer player;
     private boolean isInitialized;
     private Uri filePath;
+    private float bpmFactor;
 
     public AudioPlayer(Context context) {
         this.context = context;
@@ -42,27 +43,35 @@ public class AudioPlayer {
                 Util.getUserAgent(context, "Well Actually"), null);
     }
 
-    public void init(Uri filePath){
+    public void init(Uri filePath) {
         this.filePath = filePath;
+        bpmFactor = 1;
         player =
                 ExoPlayerFactory.newSimpleInstance(
                         context, new DefaultTrackSelector());
         DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
                 Util.getUserAgent(context, "Well Actually"), null);
-            MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                    .createMediaSource(filePath);
+        MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(filePath);
         player.setRepeatMode(Player.REPEAT_MODE_ALL);
         player.prepare(mediaSource);
         isInitialized = true;
+        setPlaybackParams(1, 1);
     }
 
-    public void release(){
+    public void initWithSample(Uri filePath, float oldBpm, float newBpm) {
+        init(filePath); // order important, init first
+        bpmFactor = BpmConverter.getNewSpeedPercentage(oldBpm, newBpm);
+        setPlaybackParams(1, 1); //only update them with new bpmfactor here
+    }
+
+    public void release() {
         player.release();
         isInitialized = false;
     }
 
     public void setPlaybackParams(float pitch, float speed) {
-        player.setPlaybackParameters(new PlaybackParameters(speed, pitch));
+        player.setPlaybackParameters(new PlaybackParameters(speed*bpmFactor, pitch));
     }
 
 
@@ -73,7 +82,7 @@ public class AudioPlayer {
 
     public void setSpeed(float speed) {
         float oldPitch = player.getPlaybackParameters().pitch;
-        player.setPlaybackParameters(new PlaybackParameters(speed, oldPitch));
+        player.setPlaybackParameters(new PlaybackParameters(speed*bpmFactor, oldPitch));
     }
 
     public boolean togglePlay() {
@@ -94,15 +103,19 @@ public class AudioPlayer {
         return player.getDuration();
     }
 
-    public long getCurrentPosition(){
+    public long getCurrentPosition() {
         return player.getCurrentPosition();
     }
 
-    public boolean isInitialized(){
+    public boolean isInitialized() {
         return isInitialized;
     }
 
     public Uri getUri() {
         return filePath;
+    }
+
+    public void setVolume(float volume) {
+        player.setVolume(volume);
     }
 }

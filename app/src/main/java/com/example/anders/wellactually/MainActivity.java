@@ -39,7 +39,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -52,16 +51,18 @@ public class MainActivity extends AppCompatActivity {
     private boolean permissionToRecordAccepted;
     private SeekBar pitchBar;
     private SeekBar speedBar;
+    private SeekBar volumeBar;
     private TabHost tabHost;
     private XyPad xyPad;
     private TabLayout trackTabs;
     private Spinner bpmSpinner;
-    private ArrayAdapter<CharSequence> spinnerAdapter;
+    private ArrayAdapter<String> spinnerAdapter;
     private SoundMixer soundMixer;
     private RecyclerView recordingsRecyclerView;
     private RecyclerView.Adapter recordingsAdapter;
     private RecyclerView.LayoutManager recordingsLayoutManager;
     private ArrayList<RecordingListItem> recordingDataset;
+    private ArrayList<String> bpmSpinnerListlist;
     private File saveDirectory = Environment.getExternalStoragePublicDirectory("/"+ "Recordings_MultiTrack");
     private static final int READ_REQUEST_CODE = 200;
 
@@ -88,23 +89,32 @@ public class MainActivity extends AppCompatActivity {
         initTabs();
         pitchBar = findViewById(R.id.seekBar);
         speedBar = findViewById(R.id.seekBar3);
+        volumeBar = findViewById(R.id.seekBarVolume);
         pitchBar.setOnSeekBarChangeListener(customSeekbarListener);
         speedBar.setOnSeekBarChangeListener(customSeekbarListenerSpeed);
+        volumeBar.setOnSeekBarChangeListener(customSeekbarListenerVolume);
         Button playButton = findViewById(R.id.button2);
         playButton.setEnabled(false);
         Button recordButton = findViewById(R.id.button_record);
         trackTabs = findViewById(R.id.trackTabs);
         trackTabs.addOnTabSelectedListener(customTabListener);
         trackTabs.setClickable(false);
-        ViewStateHandler viewStateHandler = new ViewStateHandler(playButton, recordButton, trackTabs);
+        ViewStateHandler viewStateHandler = new ViewStateHandler(playButton, recordButton, (Button) findViewById(R.id.button_save), trackTabs);
 
+        bpmSpinnerListlist = new ArrayList<String>();
+        bpmSpinnerListlist.add("---");
+        bpmSpinnerListlist.add("Custom");
+        bpmSpinnerListlist.add("60");
+        bpmSpinnerListlist.add("80");
+        bpmSpinnerListlist.add("100");
+        bpmSpinnerListlist.add("110");
+        bpmSpinnerListlist.add("120");
+        bpmSpinnerListlist.add("130");
+        bpmSpinnerListlist.add("140");
+        spinnerAdapter = new ArrayAdapter<>(getApplicationContext(),
+                android.R.layout.simple_spinner_item, bpmSpinnerListlist);
         bpmSpinner = findViewById(R.id.bpmSpinner);
-// Create an ArrayAdapter using the string array and a default spinner layout
-        spinnerAdapter = ArrayAdapter.createFromResource(this,
-                R.array.bpm_dropdown, android.R.layout.simple_spinner_item);
-// Specify the layout to use when the list of choices appears
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-// Apply the adapter to the spinner
         bpmSpinner.setAdapter(spinnerAdapter);
         bpmSpinner.setOnItemSelectedListener(customSpinnerListener);
 
@@ -156,18 +166,25 @@ public class MainActivity extends AppCompatActivity {
 
     private void readToRecodringDataset() {
         MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+        ArrayList<RecordingListItem> reverseList = new ArrayList<>();
         int index = 0;
-        for (File file : saveDirectory.listFiles()) {
-            mmr.setDataSource(getApplicationContext(), Uri.fromFile(file));
-            String nameStr = file.getName();
-            String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-            if (durationStr != null && nameStr != null) {
-                int millSecond = Integer.parseInt(durationStr);
-                RecordingListItem newItem = new RecordingListItem(nameStr, file.getPath(), millSecond);
-                recordingDataset.add(index++, newItem);
+        if (saveDirectory.listFiles() != null) {
+            for (File file : saveDirectory.listFiles()) {
+                mmr.setDataSource(getApplicationContext(), Uri.fromFile(file));
+                String nameStr = file.getName();
+                String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                if (durationStr != null && nameStr != null) {
+                    int millSecond = Integer.parseInt(durationStr);
+                    String noExtension = nameStr.substring(0,nameStr.length()-4); // hacker remove extension
+                    RecordingListItem newItem = new RecordingListItem(noExtension, file.getPath(), millSecond);
+                    reverseList.add(index++, newItem);
+                }
             }
+            for(int i = reverseList.size()-1 ; i>=0;i--){   // sorry code jesus, this is quick fix ---- fix this later by implementing dateModified compareto
+                recordingDataset.add(reverseList.get(i));
+            }
+            recordingsAdapter.notifyDataSetChanged();
         }
-        recordingsAdapter.notifyDataSetChanged();
     }
 
 
@@ -218,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
         cv.animate();
         String itemName = ((TextView) cv.findViewById(R.id.cardview_text)).getText().toString();
         String path = recordingDataset.get(recordingDataset.indexOf(new RecordingListItem(itemName,"",0))).getSavePath();
-        soundMixer.setFile(Uri.parse(path));
+        soundMixer.loadFile(Uri.parse(path));
         Toast.makeText(this,itemName + " loaded.",Toast.LENGTH_SHORT).show();
     }
 
@@ -261,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
         adb.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 if(soundMixer.saveCurrent(userInput.getText().toString(), recordingDataset))
-                    recordingsAdapter.notifyItemInserted(recordingDataset.size() - 1);
+                    recordingsAdapter.notifyItemInserted(0);
             }
         });
 
@@ -295,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
         samples.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 dialog.dismiss();
-                soundMixer.setFile(Uri.parse("file:///android_asset/drumbeat_100bpm_2bars_4by4.mp3"));
+                showBpmDialog(true);
 
             }
         });
@@ -343,32 +360,32 @@ public class MainActivity extends AppCompatActivity {
             if (resultData != null) {
                 uri = resultData.getData();
                 Log.i("Load Path", "Uri: " + uri.toString());
-                soundMixer.setFile(uri);
+                soundMixer.loadFile(uri);
             }
         }
     }
 
-    private void showBpmDialog() {
+    private void showBpmDialog(final Boolean isSample) {
         LayoutInflater li = LayoutInflater.from(getBaseContext());
         View promptsView = li.inflate(R.layout.alert_dialog, null);
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         adb.setView(promptsView);
-        adb.setTitle("Custom BPM");
+        if(isSample)
+            adb.setTitle("Stretch BPM: (default 100)");
+        else
+        adb.setTitle("Custom BPM:");
         final EditText userInput = (EditText) promptsView
                 .findViewById(R.id.dialogTextField);
         //adb.setIcon(android.R.drawable.ic_dialog_alert);
         adb.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 String inputText = userInput.getText().toString();
-                if (Integer.valueOf(inputText) < 10)
-                    inputText = "10";
-                else if (Integer.valueOf(inputText) > 500)
-                    inputText = "500";
                 soundMixer.setBpm(inputText);
-                //       spinnerAdapter.add(inputText);
-                //         spinnerAdapter.notifyDataSetChanged();
-                //    Spinner temp = findViewById(R.id.bpmSpinner);
-                //     temp.setSelection(spinnerAdapter.getCount()-1);
+                spinnerAdapter.add(inputText);
+                bpmSpinner.setSelection(spinnerAdapter.getCount()-1);
+                spinnerAdapter.notifyDataSetChanged();
+                if (isSample)
+                    soundMixer.loadSampleFile(Uri.parse("file:///android_asset/drumbeat_100bpm_2bars_4by4.ogg"),100);
             }
         });
 
@@ -376,18 +393,19 @@ public class MainActivity extends AppCompatActivity {
         adb.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
 
-                finish();
+                dialog.cancel();
             }
         });
         adb.show();
     }
+
 
     private AdapterView.OnItemSelectedListener customSpinnerListener =
             new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                     if (parent.getItemAtPosition(position).toString().equals("Custom")) {
-                        showBpmDialog();
+                        showBpmDialog(false);
                     } else
                         soundMixer.setBpm((String) parent.getItemAtPosition(position));
                 }
@@ -433,8 +451,25 @@ public class MainActivity extends AppCompatActivity {
                 public void onStopTrackingTouch(SeekBar seekBar) {
 
                 }
-            };
+};
 
+    private SeekBar.OnSeekBarChangeListener customSeekbarListenerVolume =
+            new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    soundMixer.setCurrentVolume(((float) progress)/(float) seekBar.getMax());
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            };
     private TabLayout.OnTabSelectedListener customTabListener =
             new TabLayout.OnTabSelectedListener() {
                 @Override
