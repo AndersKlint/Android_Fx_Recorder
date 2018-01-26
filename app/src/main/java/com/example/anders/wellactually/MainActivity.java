@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
@@ -408,6 +409,7 @@ public class MainActivity extends AppCompatActivity {
                         showBpmDialog(false);
                     } else
                         soundMixer.setBpm((String) parent.getItemAtPosition(position));
+                    ((TextView) view).setTextColor(Color.BLACK); // bug workaround for invisible text
                 }
 
                 @Override
