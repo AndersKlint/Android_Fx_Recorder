@@ -15,3 +15,12 @@ Simple multi track audio recorder with sound effects.
 * You can record yourself playing guitar on Track 1, and then record your singing on Track 2 while listening to the previously recorded guitar track.
 
 ## Screenshots:
+
+### Main window with sliders
+![sliders](https://raw.githubusercontent.com/andersklint/Android_Fx_Recorder/master/screenshots/sliders.png)
+
+### XY-Pad for real-time effects
+![xypad](https://raw.githubusercontent.com/andersklint/Android_Fx_Recorder/master/screenshots/xypad.png)
+
+### Recycleview file browser
+![browser](https://raw.githubusercontent.com/andersklint/Android_Fx_Recorder/master/screenshots/browser.png)
